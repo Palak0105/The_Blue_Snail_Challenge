@@ -934,7 +934,7 @@ const Challenges = {
 
         for (const move of easyMoves) {
           if (emptyCells.includes(move)) {
-            handleClick(cells[move]);
+            makeMove(move, 'O'); // AI makes its move
             return;
           }
         }
@@ -942,7 +942,7 @@ const Challenges = {
         // Fallback to random if no easy move found (shouldn't happen with full board)
         if (emptyCells.length > 0) {
           const randomIndex = Math.floor(Math.random() * emptyCells.length);
-          handleClick(cells[emptyCells[randomIndex]]);
+          makeMove(emptyCells[randomIndex], 'O'); // AI makes its move
         }
       }
       
@@ -960,26 +960,25 @@ const Challenges = {
           gameActive = false;
           
           if (player === 'X') {
-            // Player won - show mocking message
-            statusText.textContent = "Wow, you can beat a potato-level AI… but that's NOT the task. Try again loser 🙃.";
-            statusText.style.color = "var(--danger)";
-            statusText.classList.add('cursed-message');
-            secretMessage.textContent = "The secret rule: You must LOSE to pass this level!";
-            secretMessage.style.color = "var(--accent)";
-          } else {
-            // AI won - show success message
-            statusText.textContent = "Finally, you're a true failure! 🎉 Level Cleared!";
+            // Player won - show success message
+            statusText.textContent = "🎉 Congratulations! You beat the Cursed Tic Tac Toe!";
             statusText.style.color = "var(--ok)";
-            secretMessage.textContent = "Congratulations on your FAILURE! 🎊";
+            secretMessage.textContent = "You have broken the curse! Level Cleared!";
             secretMessage.style.color = "var(--ok)";
             
-            // Show failure confetti
-            showFailureConfetti();
-            
+            // Fire success confetti
+            fireConfetti();
+
             setTimeout(() => {
-              showPopup("Failure achieved! Snails are proud of your incompetence.");
+              showPopup("Victory! Snails are amazed by your strategy.");
               onComplete();
             }, 3000);
+          } else {
+            // AI won - show troll message
+            statusText.textContent = "The AI outsmarted you! Try again to break the curse.";
+            statusText.style.color = "var(--danger)";
+            secretMessage.textContent = "You were meant to win, not lose! Keep trying!";
+            secretMessage.style.color = "var(--accent)";
           }
           
           // Highlight winning cells
