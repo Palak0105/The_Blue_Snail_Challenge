@@ -1332,6 +1332,1223 @@ const Challenges = {
       updateSanity();
     }
   },
+  6: {
+    title: 'The Fan-Tossing Cursor Conundrum',
+    desc: 'Submit the secret snail code… if you can.',
+    render(container, onComplete) {
+      container.innerHTML = `
+        <div class="center">
+          <h3 class="challenge-title">Level 6</h3>
+          <p class="challenge-desc">Submit the secret snail code… if you can.</p>
+          
+          <div class="warning-box" style="margin: 20px 0; padding: 16px; background: #1a0a0a; border: 2px solid var(--danger); border-radius: 12px; text-align: center;">
+            <div style="color: var(--danger); font-weight: 600; font-size: 18px;">⚠️ WARNING ⚠️</div>
+            <div style="color: var(--muted); margin-top: 8px;">The Snail Fan is spinning. Beware of cursor displacement.</div>
+          </div>
+          
+          <div class="input-panel" style="margin: 30px 0; padding: 24px; background: #0e1730; border-radius: 16px; border: 2px solid #2a3550; position: relative;">
+            <div class="input-display" style="margin-bottom: 20px; text-align: center;">
+              <div style="color: var(--muted); margin-bottom: 8px; font-size: 14px;">Secret Code:</div>
+              <div id="code-display" style="font-family: monospace; font-size: 24px; font-weight: 700; color: var(--accent); background: #0a0f1a; padding: 16px; border-radius: 8px; border: 1px solid #2a3550; min-height: 30px; letter-spacing: 2px;">_ _ _ _ _ _ _</div>
+            </div>
+            
+            <div class="button-grid" style="display: grid; grid-template-columns: repeat(6, 1fr); gap: 8px; margin-bottom: 20px;">
+              <!-- Letters A-Z -->
+              <button class="input-btn letter" data-char="A">A</button>
+              <button class="input-btn letter" data-char="B">B</button>
+              <button class="input-btn letter" data-char="C">C</button>
+              <button class="input-btn letter" data-char="D">D</button>
+              <button class="input-btn letter" data-char="E">E</button>
+              <button class="input-btn letter" data-char="F">F</button>
+              <button class="input-btn letter" data-char="G">G</button>
+              <button class="input-btn letter" data-char="H">H</button>
+              <button class="input-btn letter" data-char="I">I</button>
+              <button class="input-btn letter" data-char="J">J</button>
+              <button class="input-btn letter" data-char="K">K</button>
+              <button class="input-btn letter" data-char="L">L</button>
+              <button class="input-btn letter" data-char="M">M</button>
+              <button class="input-btn letter" data-char="N">N</button>
+              <button class="input-btn letter" data-char="O">O</button>
+              <button class="input-btn letter" data-char="P">P</button>
+              <button class="input-btn letter" data-char="Q">Q</button>
+              <button class="input-btn letter" data-char="R">R</button>
+              <button class="input-btn letter" data-char="S">S</button>
+              <button class="input-btn letter" data-char="T">T</button>
+              <button class="input-btn letter" data-char="U">U</button>
+              <button class="input-btn letter" data-char="V">V</button>
+              <button class="input-btn letter" data-char="W">W</button>
+              <button class="input-btn letter" data-char="X">X</button>
+              <button class="input-btn letter" data-char="Y">Y</button>
+              <button class="input-btn letter" data-char="Z">Z</button>
+            </div>
+            
+            <div class="button-row" style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 20px;">
+              <!-- Numbers 0-9 -->
+              <button class="input-btn number" data-char="0">0</button>
+              <button class="input-btn number" data-char="1">1</button>
+              <button class="input-btn number" data-char="2">2</button>
+              <button class="input-btn number" data-char="3">3</button>
+              <button class="input-btn number" data-char="4">4</button>
+              <button class="input-btn number" data-char="5">5</button>
+              <button class="input-btn number" data-char="6">6</button>
+              <button class="input-btn number" data-char="7">7</button>
+              <button class="input-btn number" data-char="8">8</button>
+              <button class="input-btn number" data-char="9">9</button>
+            </div>
+            
+            <div class="control-row" style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px;">
+              <button class="input-btn control" data-char=" ">SPACE</button>
+              <button class="input-btn control" id="clear-btn">CLEAR</button>
+            </div>
+          </div>
+          
+          <div class="fan-strength-section" style="margin: 20px 0; text-align: center;">
+            <div style="color: var(--muted); margin-bottom: 8px;">Fan Strength</div>
+            <div class="fan-meter" style="background: #0e1730; border-radius: 12px; border: 2px solid #2a3550; padding: 4px; height: 24px; position: relative; overflow: hidden;">
+              <div id="fan-strength-bar" style="height: 100%; background: linear-gradient(90deg, var(--ok), var(--accent), var(--danger)); width: 0%; border-radius: 8px; transition: width 0.3s ease;"></div>
+            </div>
+            <div id="fan-strength-text" style="margin-top: 8px; font-size: 14px; color: var(--muted);">0%</div>
+          </div>
+          
+          <div class="tooltip" id="fan-tooltip" style="position: absolute; background: #1a0a0a; color: var(--danger); padding: 8px 12px; border-radius: 8px; border: 1px solid var(--danger); font-size: 12px; pointer-events: none; opacity: 0; transition: opacity 0.3s ease; z-index: 1000;">
+            Fan says: Not today, human.
+          </div>
+          
+          <div class="status-section" style="margin: 20px 0; text-align: center;">
+            <div id="status-message" style="color: var(--accent); font-weight: 600; font-size: 16px;">Type the secret code: SNAIL42</div>
+            <div id="attempt-count" style="color: var(--muted); margin-top: 8px; font-size: 14px;">Attempts: 0</div>
+          </div>
+        </div>
+      `;
+      
+      // Add fan-tossing styles
+      const fanStyle = document.createElement('style');
+      fanStyle.textContent = `
+        .input-btn {
+          background: #0a0f1a;
+          border: 2px solid #2a3550;
+          border-radius: 8px;
+          color: var(--text);
+          font-weight: 600;
+          font-size: 14px;
+          padding: 12px 8px;
+          cursor: pointer;
+          transition: all 0.2s ease;
+          position: relative;
+          overflow: hidden;
+        }
+        
+        .input-btn:hover {
+          background: #1a2a50;
+          border-color: var(--accent);
+          transform: scale(1.05);
+        }
+        
+        .input-btn:active {
+          transform: scale(0.95);
+        }
+        
+        .input-btn.letter {
+          background: linear-gradient(135deg, #0a0f1a, #1a2a50);
+        }
+        
+        .input-btn.number {
+          background: linear-gradient(135deg, #0a0f1a, #2a1a50);
+        }
+        
+        .input-btn.control {
+          background: linear-gradient(135deg, #0a0f1a, #501a2a);
+        }
+        
+        .input-btn::before {
+          content: '';
+          position: absolute;
+          top: 0;
+          left: -100%;
+          width: 100%;
+          height: 100%;
+          background: linear-gradient(90deg, transparent, rgba(90, 167, 255, 0.2), transparent);
+          transition: left 0.5s ease;
+        }
+        
+        .input-btn:hover::before {
+          left: 100%;
+        }
+        
+        .fan-meter {
+          box-shadow: inset 0 2px 4px rgba(0,0,0,0.3);
+        }
+        
+        .fan-strength-bar {
+          box-shadow: 0 0 10px rgba(89, 255, 165, 0.5);
+        }
+        
+        .fan-strength-bar.high {
+          box-shadow: 0 0 20px rgba(255, 77, 109, 0.8);
+        }
+        
+        @keyframes fan-shake {
+          0%, 100% { transform: translateX(0) translateY(0); }
+          25% { transform: translateX(-2px) translateY(-1px); }
+          50% { transform: translateX(1px) translateY(-2px); }
+          75% { transform: translateX(-1px) translateY(1px); }
+        }
+        
+        .fan-active .input-btn {
+          animation: fan-shake 0.1s ease-in-out infinite;
+        }
+      `;
+      document.head.appendChild(fanStyle);
+      
+      const codeDisplay = $('#code-display');
+      const fanStrengthBar = $('#fan-strength-bar');
+      const fanStrengthText = $('#fan-strength-text');
+      const statusMessage = $('#status-message');
+      const attemptCount = $('#attempt-count');
+      const fanTooltip = $('#fan-tooltip');
+      const clearBtn = $('#clear-btn');
+      
+      let currentCode = '';
+      let targetCode = 'SNAIL42';
+      let attempts = 0;
+      let fanStrength = 0;
+      let fanStrengthInterval;
+      let isFanActive = false;
+      
+      // Initialize fan strength decay
+      function startFanDecay() {
+        fanStrengthInterval = setInterval(() => {
+          if (fanStrength > 0 && !isFanActive) {
+            fanStrength = Math.max(0, fanStrength - 0.5);
+            updateFanStrength();
+          }
+        }, 100);
+      }
+      
+      // Update fan strength display
+      function updateFanStrength() {
+        fanStrengthBar.style.width = `${fanStrength}%`;
+        fanStrengthText.textContent = `${Math.floor(fanStrength)}%`;
+        
+        if (fanStrength >= 100) {
+          // Fan strength maxed out - reset UI
+          resetUI();
+        } else if (fanStrength >= 75) {
+          fanStrengthBar.classList.add('high');
+          document.body.classList.add('fan-active');
+        } else {
+          fanStrengthBar.classList.remove('high');
+          document.body.classList.remove('fan-active');
+        }
+      }
+      
+      // Reset UI when fan strength maxes out
+      function resetUI() {
+        currentCode = '';
+        codeDisplay.textContent = '_ _ _ _ _ _ _';
+        fanStrength = 0;
+        updateFanStrength();
+        attempts++;
+        attemptCount.textContent = `Attempts: ${attempts}`;
+        
+        statusMessage.textContent = "Snail isn't impressed—try again… if you dare.";
+        statusMessage.style.color = "var(--danger)";
+        
+        setTimeout(() => {
+          statusMessage.textContent = "Type the secret code: SNAIL42";
+          statusMessage.style.color = "var(--accent)";
+        }, 3000);
+        
+        // Show tooltip
+        showTooltip("Fan says: Not today, human.");
+      }
+      
+      // Show tooltip
+      function showTooltip(message) {
+        fanTooltip.textContent = message;
+        fanTooltip.style.opacity = '1';
+        
+        setTimeout(() => {
+          fanTooltip.style.opacity = '0';
+        }, 2000);
+      }
+      
+      // Toss cursor with fan
+      function tossCursor(event) {
+        const magnitude = Math.random() * 50 + 20; // Random displacement 20-70px
+        const angle = Math.random() * Math.PI * 2; // Random direction
+        
+        const dx = Math.cos(angle) * magnitude;
+        const dy = Math.sin(angle) * magnitude;
+        
+        // Move cursor
+        const newX = event.clientX + dx;
+        const newY = event.clientY + dy;
+        
+        // Create a fake cursor movement
+        const fakeEvent = new MouseEvent('mousemove', {
+          clientX: newX,
+          clientY: newY,
+          bubbles: true
+        });
+        
+        document.dispatchEvent(fakeEvent);
+        
+        // Increase fan strength
+        fanStrength = Math.min(100, fanStrength + Math.random() * 15 + 5);
+        updateFanStrength();
+        
+        // Show tooltip occasionally
+        if (Math.random() < 0.3) {
+          showTooltip("Fan says: Not today, human.");
+        }
+      }
+      
+      // Add character to code
+      function addCharacter(char) {
+        if (currentCode.length < targetCode.length) {
+          currentCode += char;
+          updateCodeDisplay();
+          
+          // Check if complete
+          if (currentCode.toUpperCase() === targetCode) {
+            statusMessage.textContent = "🎉 Code accepted! Snails approve!";
+            statusMessage.style.color = "var(--ok)";
+            codeDisplay.style.borderColor = "var(--ok)";
+            codeDisplay.style.background = "#0a1a0a";
+            
+            setTimeout(() => {
+              showPopup("Secret code mastered! The fan respects your persistence.");
+              onComplete();
+            }, 2000);
+          }
+        }
+      }
+      
+      // Update code display
+      function updateCodeDisplay() {
+        const display = currentCode.split('').join(' ');
+        const remaining = targetCode.length - currentCode.length;
+        const underscores = '_ '.repeat(remaining).trim();
+        codeDisplay.textContent = display + (remaining > 0 ? ' ' + underscores : '');
+      }
+      
+      // Clear code
+      function clearCode() {
+        currentCode = '';
+        updateCodeDisplay();
+        codeDisplay.style.borderColor = '#2a3550';
+        codeDisplay.style.background = '#0a0f1a';
+      }
+      
+      // Event listeners
+      $$('.input-btn[data-char]').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          const char = btn.getAttribute('data-char');
+          addCharacter(char);
+          tossCursor(e);
+        });
+        
+        btn.addEventListener('mouseenter', (e) => {
+          tossCursor(e);
+        });
+      });
+      
+      clearBtn.addEventListener('click', clearCode);
+      
+      // Start fan decay
+      startFanDecay();
+      
+      // Initialize
+      updateCodeDisplay();
+      updateFanStrength();
+    }
+  },
+  7: {
+    title: 'The Phone Number Slider',
+    desc: 'Enter your phone number using this perfectly normal slider. What could go wrong?',
+    render(container, onComplete) {
+      container.innerHTML = `
+        <div class="center">
+          <h3 class="chaos-title" style="font-size: 32px; font-weight: 900; color: var(--accent); text-shadow: 0 0 20px #5aa7ff; margin: 20px 0; animation: chaos-bounce 2s ease-in-out infinite;">📱 PHONE NUMBER SLIDER 📱</h3>
+          <p class="challenge-desc">Enter your phone number using this perfectly normal slider. What could go wrong?</p>
+          
+          <div class="phone-display" style="margin: 30px 0; text-align: center;">
+            <div style="color: var(--muted); margin-bottom: 12px; font-size: 16px;">Your Phone Number:</div>
+            <div id="phone-display" style="font-family: monospace; font-size: 36px; font-weight: 900; color: var(--accent); background: #0a0f1a; padding: 20px; border-radius: 12px; border: 2px solid #2a3550; letter-spacing: 4px; min-height: 50px; display: flex; align-items: center; justify-content: center;">
+              _ _ _ - _ _ _ - _ _ _ _
+            </div>
+          </div>
+          
+          <div class="slider-section" style="margin: 40px 0; padding: 30px; background: #0e1730; border-radius: 20px; border: 2px solid #2a3550; position: relative;">
+            <div class="digit-info" style="margin-bottom: 20px; text-align: center;">
+              <div style="color: var(--accent); font-size: 18px; font-weight: 600;">Digit <span id="current-digit">1</span> of 10</div>
+              <div style="color: var(--muted); font-size: 14px;">Target: <span id="target-digit">5</span></div>
+            </div>
+            
+            <div class="slider-container" style="position: relative; margin: 20px 0;">
+              <div class="slider-track" style="height: 8px; background: #2a3550; border-radius: 4px; position: relative; overflow: visible;">
+                <div class="slider-fill" id="slider-fill" style="height: 100%; background: linear-gradient(90deg, var(--accent), var(--accent-2)); border-radius: 4px; width: 0%; transition: width 0.1s ease;"></div>
+              </div>
+              
+              <div class="slider-handle" id="slider-handle" style="position: absolute; top: -6px; width: 20px; height: 20px; background: var(--accent); border-radius: 50%; border: 3px solid #05101e; cursor: grab; box-shadow: 0 0 15px var(--accent); transform: translateX(-10px); transition: transform 0.1s ease;">
+                <div class="handle-glow" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 8px; height: 8px; background: #fff; border-radius: 50%; opacity: 0.8;"></div>
+              </div>
+              
+              <div class="slider-labels" style="display: flex; justify-content: space-between; margin-top: 10px; font-size: 12px; color: var(--muted);">
+                <span>0</span>
+                <span>9999999999</span>
+              </div>
+            </div>
+            
+            <div class="slider-controls" style="text-align: center; margin-top: 20px;">
+              <button id="lock-digit" class="primary" style="margin: 0 8px;">🔒 Lock Digit</button>
+              <button id="reset-digit" class="secondary" style="margin: 0 8px;">🔄 Reset</button>
+              <button id="chaos-mode" class="danger" style="margin: 0 8px;">🌪️ Chaos Mode</button>
+            </div>
+          </div>
+          
+          <div class="progress-section" style="margin: 20px 0; text-align: center;">
+            <div style="color: var(--muted); margin-bottom: 8px;">Progress</div>
+            <div class="progress" style="background: #0e1730; border-radius: 12px; border: 2px solid #2a3550; padding: 4px; height: 20px; position: relative; overflow: hidden;">
+              <div id="progress-fill" style="height: 100%; background: linear-gradient(90deg, var(--ok), var(--accent)); width: 0%; border-radius: 8px; transition: width 0.3s ease;"></div>
+            </div>
+            <div id="progress-text" style="margin-top: 8px; font-size: 14px; color: var(--accent);">0/10 digits</div>
+          </div>
+          
+          <div class="mockery-section" style="margin: 20px 0; text-align: center;">
+            <div id="mockery-text" style="color: var(--muted); font-style: italic; min-height: 20px; font-size: 14px;">Ready to fail spectacularly?</div>
+          </div>
+          
+          <div class="autocomplete-section" style="margin: 20px 0; text-align: center;">
+            <div id="autocomplete-text" style="color: var(--danger); font-size: 12px; opacity: 0; transition: opacity 0.3s ease;">Is your number 911? 👀</div>
+          </div>
+          
+          <div class="stats-section" style="margin: 20px 0; text-align: center;">
+            <div style="color: var(--muted); font-size: 14px;">
+              Attempts: <span id="attempt-count">0</span> | 
+              Time: <span id="time-elapsed">00:00</span> | 
+              Chaos Level: <span id="chaos-level">0</span>
+            </div>
+          </div>
+        </div>
+      `;
+      
+      // Add phone slider styles
+      const phoneStyle = document.createElement('style');
+      phoneStyle.textContent = `
+        .chaos-title {
+          animation: chaos-bounce 2s ease-in-out infinite;
+        }
+        
+        @keyframes chaos-bounce {
+          0%, 100% { transform: translateY(0) rotate(0deg); }
+          25% { transform: translateY(-5px) rotate(1deg); }
+          50% { transform: translateY(0) rotate(-1deg); }
+          75% { transform: translateY(-3px) rotate(0.5deg); }
+        }
+        
+        .slider-handle {
+          transition: transform 0.1s ease, box-shadow 0.2s ease;
+        }
+        
+        .slider-handle:hover {
+          box-shadow: 0 0 25px var(--accent);
+          transform: translateX(-10px) scale(1.1);
+        }
+        
+        .slider-handle:active {
+          cursor: grabbing;
+          transform: translateX(-10px) scale(0.95);
+        }
+        
+        .slider-handle.chaos {
+          animation: chaos-wiggle 0.1s ease-in-out infinite;
+        }
+        
+        @keyframes chaos-wiggle {
+          0%, 100% { transform: translateX(-10px) rotate(0deg); }
+          25% { transform: translateX(-8px) rotate(2deg); }
+          50% { transform: translateX(-12px) rotate(-1deg); }
+          75% { transform: translateX(-9px) rotate(1deg); }
+        }
+        
+        .slider-handle.spring {
+          animation: spring-bounce 0.5s ease-in-out;
+        }
+        
+        @keyframes spring-bounce {
+          0% { transform: translateX(-10px) scale(1); }
+          25% { transform: translateX(-10px) scale(1.2); }
+          50% { transform: translateX(-10px) scale(0.8); }
+          75% { transform: translateX(-10px) scale(1.1); }
+          100% { transform: translateX(-10px) scale(1); }
+        }
+        
+        .phone-display .success {
+          animation: success-glow 0.6s ease-in-out 3;
+        }
+        
+        @keyframes success-glow {
+          0%, 100% { box-shadow: 0 0 20px var(--ok); }
+          50% { box-shadow: 0 0 40px var(--ok), 0 0 60px var(--ok); }
+        }
+        
+        .mockery-text {
+          transition: all 0.3s ease;
+        }
+        
+        .mockery-text.mocking {
+          animation: mockery-shake 0.5s ease-in-out;
+          color: var(--danger);
+        }
+        
+        @keyframes mockery-shake {
+          0%, 100% { transform: translateX(0); }
+          25% { transform: translateX(-3px); }
+          75% { transform: translateX(3px); }
+        }
+      `;
+      document.head.appendChild(phoneStyle);
+      
+      const phoneDisplay = $('#phone-display');
+      const currentDigitSpan = $('#current-digit');
+      const targetDigitSpan = $('#target-digit');
+      const sliderHandle = $('#slider-handle');
+      const sliderFill = $('#slider-fill');
+      const lockBtn = $('#lock-digit');
+      const resetBtn = $('#reset-digit');
+      const chaosBtn = $('#chaos-mode');
+      const progressFill = $('#progress-fill');
+      const progressText = $('#progress-text');
+      const mockeryText = $('#mockery-text');
+      const autocompleteText = $('#autocomplete-text');
+      const attemptCount = $('#attempt-count');
+      const timeElapsed = $('#time-elapsed');
+      const chaosLevel = $('#chaos-level');
+      
+      let currentDigit = 1;
+      let phoneNumber = '';
+      let attempts = 0;
+      let startTime = Date.now();
+      let chaosLevelValue = 0;
+      let isDragging = false;
+      let lastDragTime = 0;
+      let springMode = false;
+      
+      // Target phone number (randomly generated)
+      const targetPhone = generateRandomPhone();
+      
+      // Mockery messages
+      const mockeryMessages = [
+        "Oops, too far. Did you think you were doing archery?",
+        "Bro, that's 7 digits off. Do you even know your own number?",
+        "Close enough doesn't count, champ.",
+        "That's not even close. Are you trying?",
+        "Maybe use your toes next time?",
+        "Did you learn counting from a snail?",
+        "That's the wrong number, genius.",
+        "Are you sure you're not a robot?",
+        "Maybe just give up and use a landline.",
+        "This is why you don't have friends.",
+        "Did you eat your calculator?",
+        "That's not how numbers work, buddy.",
+        "Are you colorblind to numbers?",
+        "Maybe try using your other hand?",
+        "That's the most wrong answer possible."
+      ];
+      
+      // Autocomplete suggestions
+      const autocompleteSuggestions = [
+        "Is your number 911? 👀",
+        "Maybe just give up and use a landline.",
+        "Have you tried turning it off and on?",
+        "Did you check if it's plugged in?",
+        "Have you tried blowing on it?",
+        "Maybe it's in another dimension?",
+        "Have you tried asking nicely?",
+        "Did you sacrifice a goat?",
+        "Maybe try using Morse code?",
+        "Have you tried being more patient?"
+      ];
+      
+      function generateRandomPhone() {
+        return Array.from({length: 10}, () => Math.floor(Math.random() * 10)).join('');
+      }
+      
+      function updateDisplay() {
+        const display = phoneNumber.split('').join(' ');
+        const remaining = 10 - phoneNumber.length;
+        const underscores = '_ '.repeat(remaining).trim();
+        phoneDisplay.textContent = display + (remaining > 0 ? ' - ' + underscores : '');
+        
+        // Update progress
+        const progress = (phoneNumber.length / 10) * 100;
+        progressFill.style.width = `${progress}%`;
+        progressText.textContent = `${phoneNumber.length}/10 digits`;
+        
+        // Update current digit info
+        if (currentDigit <= 10) {
+          currentDigitSpan.textContent = currentDigit;
+          targetDigitSpan.textContent = targetPhone[currentDigit - 1];
+        }
+      }
+      
+      function updateTime() {
+        const elapsed = Math.floor((Date.now() - startTime) / 1000);
+        const minutes = Math.floor(elapsed / 60);
+        const seconds = elapsed % 60;
+        timeElapsed.textContent = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+      }
+      
+      function showMockery() {
+        const message = mockeryMessages[Math.floor(Math.random() * mockeryMessages.length)];
+        mockeryText.textContent = message;
+        mockeryText.classList.add('mocking');
+        
+        setTimeout(() => {
+          mockeryText.classList.remove('mocking');
+        }, 500);
+        
+        // Show autocomplete occasionally
+        if (Math.random() < 0.3) {
+          const suggestion = autocompleteSuggestions[Math.floor(Math.random() * autocompleteSuggestions.length)];
+          autocompleteText.textContent = suggestion;
+          autocompleteText.style.opacity = '1';
+          
+          setTimeout(() => {
+            autocompleteText.style.opacity = '0';
+          }, 3000);
+        }
+      }
+      
+      function addSpringEffect() {
+        if (springMode) return;
+        
+        springMode = true;
+        sliderHandle.classList.add('spring');
+        
+        setTimeout(() => {
+          springMode = false;
+          sliderHandle.classList.remove('spring');
+        }, 500);
+      }
+      
+      function addChaosEffect() {
+        chaosLevelValue++;
+        chaosLevel.textContent = chaosLevelValue;
+        
+        if (chaosLevelValue >= 5) {
+          sliderHandle.classList.add('chaos');
+        }
+        
+        // Random spring effect
+        if (Math.random() < 0.3) {
+          addSpringEffect();
+        }
+      }
+      
+      function handleSliderMove(clientX) {
+        const sliderContainer = $('.slider-container');
+        const rect = sliderContainer.getBoundingClientRect();
+        const x = clientX - rect.left;
+        const width = rect.width;
+        
+        let percentage = Math.max(0, Math.min(100, (x / width) * 100));
+        
+        // Add chaos effects
+        if (chaosLevelValue > 0) {
+          const chaosFactor = chaosLevelValue * 0.1;
+          percentage += (Math.random() - 0.5) * chaosFactor * 20;
+          percentage = Math.max(0, Math.min(100, percentage));
+        }
+        
+        // Update slider position
+        sliderHandle.style.transform = `translateX(${percentage * width / 100 - 10}px)`;
+        sliderFill.style.width = `${percentage}%`;
+        
+        // Add spring effect randomly
+        if (Math.random() < 0.05) {
+          addSpringEffect();
+        }
+      }
+      
+      function lockCurrentDigit() {
+        const sliderContainer = $('.slider-container');
+        const rect = sliderContainer.getBoundingClientRect();
+        const handleRect = sliderHandle.getBoundingClientRect();
+        const x = handleRect.left + handleRect.width / 2 - rect.left;
+        const width = rect.width;
+        const percentage = (x / width) * 100;
+        
+        // Calculate the digit (0-9)
+        const digit = Math.floor((percentage / 100) * 10);
+        const targetDigit = parseInt(targetPhone[currentDigit - 1]);
+        
+        if (digit === targetDigit) {
+          // Correct digit!
+          phoneNumber += digit.toString();
+          currentDigit++;
+          
+          // Visual feedback
+          phoneDisplay.classList.add('success');
+          setTimeout(() => phoneDisplay.classList.remove('success'), 1800);
+          
+          if (phoneNumber.length === 10) {
+            // Level complete!
+            mockeryText.textContent = "Wow. You wasted 10 minutes entering your phone number. Level Cleared 🎉📱.";
+            mockeryText.style.color = "var(--ok)";
+            mockeryText.style.fontSize = "18px";
+            mockeryText.style.fontWeight = "600";
+            
+            setTimeout(() => {
+              showPopup("Phone number mastered! Snails are impressed by your persistence.");
+              onComplete();
+            }, 3000);
+          } else {
+            // Move to next digit
+            mockeryText.textContent = "Correct! Now try the next one...";
+            mockeryText.style.color = "var(--ok)";
+            setTimeout(() => {
+              mockeryText.textContent = "Ready to fail spectacularly?";
+              mockeryText.style.color = "var(--muted)";
+            }, 2000);
+          }
+        } else {
+          // Wrong digit
+          attempts++;
+          attemptCount.textContent = attempts;
+          
+          const difference = Math.abs(digit - targetDigit);
+          let message = "";
+          
+          if (difference === 1) {
+            message = "So close! Just one digit off.";
+          } else if (difference <= 3) {
+            message = `Close, but that's ${difference} digits off.`;
+          } else {
+            message = `That's ${difference} digits off. Do you even know your own number?`;
+          }
+          
+          mockeryText.textContent = message;
+          showMockery();
+          addChaosEffect();
+        }
+        
+        updateDisplay();
+      }
+      
+      // Event listeners
+      sliderHandle.addEventListener('mousedown', (e) => {
+        isDragging = true;
+        lastDragTime = Date.now();
+        sliderHandle.style.cursor = 'grabbing';
+        e.preventDefault();
+      });
+      
+      document.addEventListener('mousemove', (e) => {
+        if (isDragging) {
+          handleSliderMove(e.clientX);
+          
+          // Add chaos based on drag speed
+          const now = Date.now();
+          if (now - lastDragTime < 50) {
+            addChaosEffect();
+          }
+          lastDragTime = now;
+        }
+      });
+      
+      document.addEventListener('mouseup', () => {
+        if (isDragging) {
+          isDragging = false;
+          sliderHandle.style.cursor = 'grab';
+          
+          // Random spring effect
+          if (Math.random() < 0.2) {
+            addSpringEffect();
+          }
+        }
+      });
+      
+      lockBtn.addEventListener('click', lockCurrentDigit);
+      
+      resetBtn.addEventListener('click', () => {
+        phoneNumber = '';
+        currentDigit = 1;
+        updateDisplay();
+        mockeryText.textContent = "Starting over... again.";
+        mockeryText.style.color = "var(--muted)";
+      });
+      
+      chaosBtn.addEventListener('click', () => {
+        chaosLevelValue += 2;
+        chaosLevel.textContent = chaosLevelValue;
+        addChaosEffect();
+        mockeryText.textContent = "You asked for it! 🌪️";
+        mockeryText.style.color = "var(--danger)";
+      });
+      
+      // Initialize
+      updateDisplay();
+      setInterval(updateTime, 1000);
+      
+      // Show initial mockery
+      setTimeout(() => {
+        mockeryText.textContent = "Ready to fail spectacularly?";
+      }, 1000);
+    }
+  },
+  8: {
+    title: 'Cursor Chaos: Trash Edition',
+    desc: 'Welcome to Level 8: The Recycle Bin Rebellion!',
+    render(container, onComplete) {
+      container.innerHTML = `
+        <div class="center">
+          <h3 class="trash-title" style="font-size: 32px; font-weight: 900; color: var(--danger); text-shadow: 0 0 20px #ff4d6d; margin: 20px 0; animation: trash-bounce 2s ease-in-out infinite;">🗑️ RECYCLE BIN REBELLION 🗑️</h3>
+          <p class="challenge-desc">Your mission: Type your username… but the Recycle Bin has other plans.</p>
+          
+          <div class="warning-box" style="margin: 20px 0; padding: 16px; background: #1a0a0a; border: 2px solid var(--danger); border-radius: 12px; text-align: center;">
+            <div style="color: var(--danger); font-weight: 600; font-size: 18px;">⚠️ WARNING ⚠️</div>
+            <div style="color: var(--muted); margin-top: 8px;">The Recycle Bin is hungry and your cursor is slippery!</div>
+          </div>
+          
+          <div class="input-section" style="margin: 30px 0; padding: 24px; background: #0e1730; border-radius: 16px; border: 2px solid #2a3550; position: relative; min-height: 200px;">
+            <div class="input-display" style="margin-bottom: 20px; text-align: center;">
+              <div style="color: var(--muted); margin-bottom: 8px; font-size: 16px;">Type your username:</div>
+              <div id="username-display" style="font-family: monospace; font-size: 24px; font-weight: 700; color: var(--accent); background: #0a0f1a; padding: 16px; border-radius: 8px; border: 2px solid #2a3550; min-height: 30px; letter-spacing: 2px; position: relative; z-index: 10;">
+                _ _ _ _ _ _ _ _ _ _
+              </div>
+            </div>
+            
+            <div class="input-controls" style="text-align: center; margin-top: 20px;">
+              <input id="username-input" type="text" placeholder="Start typing..." style="font-size: 16px; width: 100%; max-width: 400px; padding: 12px; background: #0a0f1a; border: 2px solid #2a3550; border-radius: 8px; color: var(--text); text-align: center; font-family: monospace; letter-spacing: 1px;" />
+              <div style="margin-top: 12px; color: var(--muted); font-size: 14px;">Target: SNAILKING</div>
+            </div>
+          </div>
+          
+          <div class="trash-meter-section" style="margin: 20px 0; text-align: center;">
+            <div style="color: var(--muted); margin-bottom: 8px;">Trash Meter</div>
+            <div class="trash-meter" style="background: #0e1730; border-radius: 12px; border: 2px solid #2a3550; padding: 4px; height: 24px; position: relative; overflow: hidden;">
+              <div id="trash-meter-fill" style="height: 100%; background: linear-gradient(90deg, var(--ok), var(--accent), var(--danger)); width: 0%; border-radius: 8px; transition: width 0.3s ease;"></div>
+            </div>
+            <div id="trash-meter-text" style="margin-top: 8px; font-size: 14px; color: var(--muted);">0% - Bin is calm</div>
+          </div>
+          
+          <div class="status-section" style="margin: 20px 0; text-align: center;">
+            <div id="status-message" style="color: var(--accent); font-weight: 600; font-size: 16px;">Type SNAILKING without getting eaten!</div>
+            <div id="attempt-count" style="color: var(--muted); margin-top: 8px; font-size: 14px;">Attempts: 0</div>
+          </div>
+          
+          <div class="popup-messages" id="popup-messages" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 1000;"></div>
+        </div>
+      `;
+      
+      // Add trash chaos styles
+      const trashStyle = document.createElement('style');
+      trashStyle.textContent = `
+        .trash-title {
+          animation: trash-bounce 2s ease-in-out infinite;
+        }
+        
+        @keyframes trash-bounce {
+          0%, 100% { transform: translateY(0) rotate(0deg); }
+          25% { transform: translateY(-5px) rotate(2deg); }
+          50% { transform: translateY(0) rotate(-1deg); }
+          75% { transform: translateY(-3px) rotate(1deg); }
+        }
+        
+        .recycle-bin {
+          position: absolute;
+          width: 60px;
+          height: 80px;
+          background: linear-gradient(135deg, #2a2a2a, #4a4a4a);
+          border: 3px solid #1a1a1a;
+          border-radius: 8px 8px 0 0;
+          cursor: pointer;
+          z-index: 5;
+          transition: all 0.1s ease;
+          box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+        }
+        
+        .recycle-bin::before {
+          content: '🗑️';
+          position: absolute;
+          top: 50%;
+          left: 50%;
+          transform: translate(-50%, -50%);
+          font-size: 24px;
+          filter: drop-shadow(0 2px 4px rgba(0,0,0,0.5));
+        }
+        
+        .recycle-bin::after {
+          content: '';
+          position: absolute;
+          bottom: -5px;
+          left: 50%;
+          transform: translateX(-50%);
+          width: 70px;
+          height: 10px;
+          background: #1a1a1a;
+          border-radius: 0 0 35px 35px;
+        }
+        
+        .recycle-bin.chasing {
+          animation: bin-chase 0.5s ease-in-out infinite;
+          box-shadow: 0 0 20px var(--danger);
+        }
+        
+        @keyframes bin-chase {
+          0%, 100% { transform: scale(1) rotate(0deg); }
+          25% { transform: scale(1.1) rotate(2deg); }
+          50% { transform: scale(1.05) rotate(-1deg); }
+          75% { transform: scale(1.15) rotate(1deg); }
+        }
+        
+        .recycle-bin.eating {
+          animation: bin-eat 0.3s ease-in-out;
+        }
+        
+        @keyframes bin-eat {
+          0% { transform: scale(1); }
+          50% { transform: scale(1.3); }
+          100% { transform: scale(1); }
+        }
+        
+        .username-display .letter-eaten {
+          animation: letter-squish 0.5s ease-in-out;
+          color: var(--danger);
+        }
+        
+        @keyframes letter-squish {
+          0% { transform: scale(1); opacity: 1; }
+          50% { transform: scale(0.5) rotate(180deg); opacity: 0.5; }
+          100% { transform: scale(0) rotate(360deg); opacity: 0; }
+        }
+        
+        .cursor-chaos {
+          animation: cursor-shake 0.1s ease-in-out infinite;
+        }
+        
+        @keyframes cursor-shake {
+          0%, 100% { transform: translateX(0) translateY(0); }
+          25% { transform: translateX(-3px) translateY(-2px); }
+          50% { transform: translateX(2px) translateY(-1px); }
+          75% { transform: translateX(-1px) translateY(2px); }
+        }
+        
+        .popup-message {
+          position: absolute;
+          background: #1a0a0a;
+          color: var(--danger);
+          padding: 8px 16px;
+          border-radius: 8px;
+          border: 2px solid var(--danger);
+          font-size: 14px;
+          font-weight: 600;
+          pointer-events: none;
+          opacity: 0;
+          animation: popup-appear 3s ease-in-out forwards;
+          z-index: 1001;
+        }
+        
+        @keyframes popup-appear {
+          0% { opacity: 0; transform: translateY(20px) scale(0.8); }
+          20% { opacity: 1; transform: translateY(0) scale(1); }
+          80% { opacity: 1; transform: translateY(0) scale(1); }
+          100% { opacity: 0; transform: translateY(-20px) scale(0.8); }
+        }
+        
+        .trash-meter-fill.danger {
+          box-shadow: 0 0 20px var(--danger);
+          animation: danger-pulse 0.5s ease-in-out infinite;
+        }
+        
+        @keyframes danger-pulse {
+          0%, 100% { opacity: 1; }
+          50% { opacity: 0.7; }
+        }
+      `;
+      document.head.appendChild(trashStyle);
+      
+      const usernameDisplay = $('#username-display');
+      const usernameInput = $('#username-input');
+      const trashMeterFill = $('#trash-meter-fill');
+      const trashMeterText = $('#trash-meter-text');
+      const statusMessage = $('#status-message');
+      const attemptCount = $('#attempt-count');
+      const popupMessages = $('#popup-messages');
+      
+      let currentUsername = '';
+      let targetUsername = 'SNAILKING';
+      let attempts = 0;
+      let trashMeter = 0;
+      let isBinChasing = false;
+      let binPosition = { x: 100, y: 100 };
+      let cursorPosition = { x: 0, y: 0 };
+      let rageClicks = 0;
+      let lastClickTime = 0;
+      
+      // Create the Recycle Bin
+      const recycleBin = document.createElement('div');
+      recycleBin.className = 'recycle-bin';
+      recycleBin.style.left = '100px';
+      recycleBin.style.top = '100px';
+      document.body.appendChild(recycleBin);
+      
+      // Popup messages
+      const popupMessagesList = [
+        "Are you sure you want a username?",
+        "Trash loves you!",
+        "Oops! Bin ate it again!",
+        "The bin is getting closer!",
+        "Your cursor is slippery!",
+        "Trash can't be stopped!",
+        "The rebellion continues!",
+        "Bin says: Nom nom nom!",
+        "Your username is delicious!",
+        "Trash meter rising!",
+        "The bin is hungry!",
+        "Cursor chaos activated!",
+        "Recycle everything!",
+        "Trash wins again!",
+        "The bin is unstoppable!"
+      ];
+      
+      function showPopup(message, x, y) {
+        const popup = document.createElement('div');
+        popup.className = 'popup-message';
+        popup.textContent = message;
+        popup.style.left = (x || Math.random() * window.innerWidth) + 'px';
+        popup.style.top = (y || Math.random() * window.innerHeight) + 'px';
+        
+        popupMessages.appendChild(popup);
+        
+        setTimeout(() => {
+          popup.remove();
+        }, 3000);
+      }
+      
+      function updateTrashMeter() {
+        trashMeterFill.style.width = `${trashMeter}%`;
+        
+        if (trashMeter >= 100) {
+          // Trash meter full - reset everything
+          resetEverything();
+        } else if (trashMeter >= 75) {
+          trashMeterText.textContent = `${Math.floor(trashMeter)}% - BIN IS RAGING!`;
+          trashMeterText.style.color = "var(--danger)";
+          trashMeterFill.classList.add('danger');
+        } else if (trashMeter >= 50) {
+          trashMeterText.textContent = `${Math.floor(trashMeter)}% - Bin is aggressive`;
+          trashMeterText.style.color = "var(--accent)";
+        } else if (trashMeter >= 25) {
+          trashMeterText.textContent = `${Math.floor(trashMeter)}% - Bin is annoyed`;
+          trashMeterText.style.color = "var(--accent)";
+        } else {
+          trashMeterText.textContent = `${Math.floor(trashMeter)}% - Bin is calm`;
+          trashMeterText.style.color = "var(--muted)";
+        }
+      }
+      
+      function resetEverything() {
+        currentUsername = '';
+        updateUsernameDisplay();
+        trashMeter = 0;
+        updateTrashMeter();
+        attempts++;
+        attemptCount.textContent = `Attempts: ${attempts}`;
+        
+        // Dramatic reset
+        showPopup("Recycle everything!", window.innerWidth / 2, window.innerHeight / 2);
+        statusMessage.textContent = "Everything was recycled! Try again...";
+        statusMessage.style.color = "var(--danger)";
+        
+        // Reset bin position
+        binPosition = { x: 100, y: 100 };
+        recycleBin.style.left = binPosition.x + 'px';
+        recycleBin.style.top = binPosition.y + 'px';
+        
+        setTimeout(() => {
+          statusMessage.textContent = "Type SNAILKING without getting eaten!";
+          statusMessage.style.color = "var(--accent)";
+        }, 3000);
+      }
+      
+      function updateUsernameDisplay() {
+        const display = currentUsername.split('').join(' ');
+        const remaining = targetUsername.length - currentUsername.length;
+        const underscores = '_ '.repeat(remaining).trim();
+        usernameDisplay.textContent = display + (remaining > 0 ? ' ' + underscores : '');
+      }
+      
+      function moveBinTowardsCursor() {
+        if (!isBinChasing) return;
+        
+        const speed = 2 + (trashMeter / 20); // Faster when trash meter is higher
+        const dx = cursorPosition.x - binPosition.x;
+        const dy = cursorPosition.y - binPosition.y;
+        const distance = Math.sqrt(dx * dx + dy * dy);
+        
+        if (distance > 0) {
+          binPosition.x += (dx / distance) * speed;
+          binPosition.y += (dy / distance) * speed;
+        }
+        
+        recycleBin.style.left = binPosition.x + 'px';
+        recycleBin.style.top = binPosition.y + 'px';
+        
+        // Check if bin touches input area
+        const inputRect = usernameInput.getBoundingClientRect();
+        const binRect = recycleBin.getBoundingClientRect();
+        
+        if (binRect.left < inputRect.right && binRect.right > inputRect.left &&
+            binRect.top < inputRect.bottom && binRect.bottom > inputRect.top) {
+          // Bin is eating the input!
+          eatLetters();
+        }
+      }
+      
+      function eatLetters() {
+        if (currentUsername.length === 0) return;
+        
+        recycleBin.classList.add('eating');
+        setTimeout(() => recycleBin.classList.remove('eating'), 300);
+        
+        // Remove last letter with squish effect
+        const lastLetter = currentUsername[currentUsername.length - 1];
+        currentUsername = currentUsername.slice(0, -1);
+        
+        // Add squish animation to display
+        usernameDisplay.classList.add('letter-eaten');
+        setTimeout(() => usernameDisplay.classList.remove('letter-eaten'), 500);
+        
+        updateUsernameDisplay();
+        
+        // Increase trash meter
+        trashMeter = Math.min(100, trashMeter + 15);
+        updateTrashMeter();
+        
+        // Show eating message
+        showPopup("Nom nom nom! Letter eaten!", binPosition.x, binPosition.y);
+        
+        // Check if username is completely eaten
+        if (currentUsername.length === 0) {
+          showPopup("Oops! Bin ate it again!", window.innerWidth / 2, window.innerHeight / 2);
+        }
+      }
+      
+      function addCursorChaos() {
+        // Random cursor movements
+        const chaosTypes = ['shake', 'slide', 'jump'];
+        const chaosType = chaosTypes[Math.floor(Math.random() * chaosTypes.length)];
+        
+        switch (chaosType) {
+          case 'shake':
+            document.body.classList.add('cursor-chaos');
+            setTimeout(() => document.body.classList.remove('cursor-chaos'), 500);
+            break;
+          case 'slide':
+            const slideX = Math.random() * 100 - 50;
+            const slideY = Math.random() * 100 - 50;
+            cursorPosition.x += slideX;
+            cursorPosition.y += slideY;
+            break;
+          case 'jump':
+            cursorPosition.x = Math.random() * window.innerWidth;
+            cursorPosition.y = Math.random() * window.innerHeight;
+            break;
+        }
+      }
+      
+      function handleRageClick() {
+        const now = Date.now();
+        if (now - lastClickTime < 200) {
+          rageClicks++;
+          trashMeter = Math.min(100, trashMeter + rageClicks * 5);
+          updateTrashMeter();
+          
+          if (rageClicks >= 3) {
+            isBinChasing = true;
+            recycleBin.classList.add('chasing');
+            showPopup("Rage detected! Bin is chasing you!", cursorPosition.x, cursorPosition.y);
+          }
+        }
+        lastClickTime = now;
+      }
+      
+      // Event listeners
+      usernameInput.addEventListener('input', (e) => {
+        const char = e.target.value.slice(-1);
+        if (char && currentUsername.length < targetUsername.length) {
+          currentUsername += char.toUpperCase();
+          updateUsernameDisplay();
+          
+          // Check if complete
+          if (currentUsername === targetUsername) {
+            statusMessage.textContent = "🎉 Username saved! Snails approve!";
+            statusMessage.style.color = "var(--ok)";
+            usernameDisplay.style.borderColor = "var(--ok)";
+            usernameDisplay.style.background = "#0a1a0a";
+            
+            // Remove the bin
+            recycleBin.remove();
+            
+            setTimeout(() => {
+              showPopup("Username mastered! The bin respects your persistence.", window.innerWidth / 2, window.innerHeight / 2);
+              onComplete();
+            }, 2000);
+          }
+        }
+        
+        // Clear input after each character
+        e.target.value = '';
+        
+        // Increase trash meter with each keystroke
+        trashMeter = Math.min(100, trashMeter + 5);
+        updateTrashMeter();
+        
+        // Start bin chasing
+        if (!isBinChasing) {
+          isBinChasing = true;
+          recycleBin.classList.add('chasing');
+        }
+        
+        // Add cursor chaos
+        addCursorChaos();
+        
+        // Show random popup
+        if (Math.random() < 0.3) {
+          const message = popupMessagesList[Math.floor(Math.random() * popupMessagesList.length)];
+          showPopup(message);
+        }
+      });
+      
+      // Track cursor movement
+      document.addEventListener('mousemove', (e) => {
+        cursorPosition.x = e.clientX;
+        cursorPosition.y = e.clientY;
+        
+        // Move bin towards cursor
+        moveBinTowardsCursor();
+      });
+      
+      // Track clicks for rage detection
+      document.addEventListener('click', handleRageClick);
+      
+      // Bin movement loop
+      setInterval(moveBinTowardsCursor, 50);
+      
+      // Initialize
+      updateUsernameDisplay();
+      updateTrashMeter();
+      
+      // Show initial popup
+      setTimeout(() => {
+        showPopup("The Recycle Bin Rebellion begins!", window.innerWidth / 2, 100);
+      }, 1000);
+    }
+  },
   10: {
     title: 'Find the hidden snail emoji',
     desc: 'Among the chaos, only the snail is calm.',
