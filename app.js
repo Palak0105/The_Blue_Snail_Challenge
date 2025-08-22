@@ -149,38 +149,1119 @@ async function fakeVerifyFlow(successText = "Snails approve.") {
 // ---------- Challenges ----------
 const Challenges = {
   1: {
-    title: 'Stare at the spinner without blinking',
-    desc: 'Do nothing. Become one with the wheel.',
+    title: 'Click the Moving Button',
+    desc: 'Click the button 10 times to complete the level.',
     render(container, onComplete) {
       container.innerHTML = `
         <div class="center">
           <h3 class="challenge-title">Level 1</h3>
-          <p class="challenge-desc">Stare at this spinner for 10 minutes. Or 10 seconds. We\'re not strict.</p>
-          <div style="display:inline-block;width:64px;height:64px;border:6px solid #21345c;border-top-color:var(--accent);border-radius:50%;animation:spin 1.2s linear infinite"></div>
-          <style>@keyframes spin { to { transform: rotate(360deg); } }</style>
+          <p class="challenge-desc">Click the button 10 times to complete the level. But be careful - it moves when you hover too long!</p>
+          <div class="game-area" style="position: relative; width: 100%; height: 300px; border: 2px dashed #2a3550; border-radius: 12px; margin: 20px 0;">
+            <button id="moving-btn" class="primary" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);">Click Me!</button>
+          </div>
+          <div class="progress-info">
+            <div>Clicks: <span id="click-count">0</span>/10</div>
+            <div class="progress">
+              <div id="click-progress" style="width: 0%"></div>
+            </div>
+          </div>
         </div>
       `;
-      setTimeout(onComplete, 8000); // mercy
+      
+      const button = $('#moving-btn');
+      const gameArea = container.querySelector('.game-area');
+      const clickCount = $('#click-count');
+      const progressBar = $('#click-progress');
+      
+      let clicks = 0;
+      let hoverTimer = null;
+      let isHovering = false;
+      
+      // Update progress bar
+      function updateProgress() {
+        clickCount.textContent = clicks;
+        progressBar.style.width = `${(clicks / 10) * 100}%`;
+      }
+      
+      // Move button to random position
+      function moveButton() {
+        const areaRect = gameArea.getBoundingClientRect();
+        const buttonRect = button.getBoundingClientRect();
+        
+        const maxX = areaRect.width - buttonRect.width - 20;
+        const maxY = areaRect.height - buttonRect.height - 20;
+        
+        const newX = Math.random() * maxX + 10;
+        const newY = Math.random() * maxY + 10;
+        
+        button.style.left = `${newX}px`;
+        button.style.top = `${newY}px`;
+        button.style.transform = 'none';
+        
+        // Add some visual feedback
+        button.style.animation = 'bounce 0.3s ease';
+        setTimeout(() => button.style.animation = '', 300);
+      }
+      
+      // Handle button clicks
+      button.addEventListener('click', () => {
+        clicks++;
+        updateProgress();
+        
+        if (clicks >= 10) {
+          button.style.pointerEvents = 'none';
+          button.textContent = 'Complete!';
+          button.style.background = 'var(--ok)';
+          button.style.color = '#05101e';
+          setTimeout(() => onComplete(), 1000);
+        } else {
+          // Move button after each click
+          moveButton();
+        }
+      });
+      
+      // Handle hover timing
+      button.addEventListener('mouseenter', () => {
+        isHovering = true;
+        hoverTimer = setTimeout(() => {
+          if (isHovering) {
+            moveButton();
+            showPopup('Too slow! Button moved.');
+          }
+        }, 500);
+      });
+      
+      button.addEventListener('mouseleave', () => {
+        isHovering = false;
+        if (hoverTimer) {
+          clearTimeout(hoverTimer);
+          hoverTimer = null;
+        }
+      });
+      
+      // Add bounce animation CSS
+      const style = document.createElement('style');
+      style.textContent = `
+        @keyframes bounce {
+          0%, 100% { transform: scale(1); }
+          50% { transform: scale(1.1); }
+        }
+      `;
+      document.head.appendChild(style);
+      
+      updateProgress();
+    }
+  },
+  2: {
+    title: 'Type the Twisted Sentence',
+    desc: 'Type the target sentence, but each key maps to a different letter.',
+    render(container, onComplete) {
+      container.innerHTML = `
+        <div class="center">
+          <h3 class="challenge-title">Level 2</h3>
+          <p class="challenge-desc">Type the target sentence below. But beware - each key you press maps to a different letter!</p>
+          
+          <div class="target-section" style="margin: 20px 0; padding: 16px; background: #0e1730; border-radius: 12px; border: 1px solid #2a3550;">
+            <h4 style="margin: 0 0 8px 0; color: var(--accent);">Target Sentence:</h4>
+            <div id="target-text" style="font-size: 18px; line-height: 1.4; color: var(--text);">The quick brown fox jumps over the lazy snail.</div>
+          </div>
+          
+          <div class="input-section" style="margin: 20px 0;">
+            <label for="twisted-input" style="display: block; margin-bottom: 8px; color: var(--muted);">Type here:</label>
+            <input id="twisted-input" class="input" type="text" placeholder="Start typing..." style="font-size: 16px; width: 100%; max-width: 500px;" />
+            <div id="mapped-display" style="margin-top: 12px; padding: 12px; background: #0a0f1a; border-radius: 8px; border: 1px solid #1f2a44; min-height: 20px; color: var(--muted); font-family: monospace;">
+              <span style="color: var(--muted);">Mapped output: </span><span id="mapped-text"></span>
+            </div>
+          </div>
+          
+          <div class="progress-section" style="margin: 20px 0;">
+            <div style="margin-bottom: 8px; color: var(--muted);">Progress: <span id="progress-text">0%</span></div>
+            <div class="progress">
+              <div id="level2-progress" style="width: 0%"></div>
+            </div>
+          </div>
+          
+          <div id="level2-status" style="margin-top: 16px; font-weight: 600;"></div>
+        </div>
+      `;
+      
+      const input = $('#twisted-input');
+      const mappedText = $('#mapped-text');
+      const progressText = $('#progress-text');
+      const progressBar = $('#level2-progress');
+      const status = $('#level2-status');
+      
+      // Letter mapping (simple substitution cipher)
+      const letterMap = {
+        'a': 'q', 'b': 'w', 'c': 'e', 'd': 'r', 'e': 't', 'f': 'y', 'g': 'u', 'h': 'i',
+        'i': 'o', 'j': 'p', 'k': 'a', 'l': 's', 'm': 'd', 'n': 'f', 'o': 'g', 'p': 'h',
+        'q': 'j', 'r': 'k', 's': 'l', 't': 'z', 'u': 'x', 'v': 'c', 'w': 'v', 'x': 'b',
+        'y': 'n', 'z': 'm', ' ': ' ', '.': '.', ',': ',', '!': '!', '?': '?'
+      };
+      
+      // Reverse mapping for decoding
+      const reverseMap = {};
+      Object.keys(letterMap).forEach(key => {
+        reverseMap[letterMap[key]] = key;
+      });
+      
+      const targetSentence = "The quick brown fox jumps over the lazy snail.";
+      let currentTyped = "";
+      let mappedOutput = "";
+      
+      // Update progress
+      function updateProgress() {
+        const progress = Math.min((currentTyped.length / targetSentence.length) * 100, 100);
+        progressText.textContent = `${Math.round(progress)}%`;
+        progressBar.style.width = `${progress}%`;
+      }
+      
+      // Check completion
+      function checkCompletion() {
+        if (currentTyped === targetSentence) {
+          status.textContent = "🎉 Level Cleared! Perfect typing!";
+          status.style.color = "var(--ok)";
+          input.disabled = true;
+          input.style.background = "#0a1a0a";
+          input.style.borderColor = "var(--ok)";
+          
+          // Add some visual flair
+          setTimeout(() => {
+            showPopup("Twisted typing mastered! Snails approve.");
+            onComplete();
+          }, 1500);
+        }
+      }
+      
+      // Handle input
+      input.addEventListener('input', (e) => {
+        const value = e.target.value;
+        mappedOutput = "";
+        currentTyped = "";
+        
+        // Process each character
+        for (let char of value) {
+          const lowerChar = char.toLowerCase();
+          if (letterMap[lowerChar]) {
+            mappedOutput += letterMap[lowerChar];
+            currentTyped += reverseMap[letterMap[lowerChar]];
+          } else {
+            mappedOutput += char;
+            currentTyped += char;
+          }
+        }
+        
+        // Update display
+        mappedText.textContent = mappedOutput;
+        updateProgress();
+        checkCompletion();
+      });
+      
+      // Focus input on start
+      setTimeout(() => input.focus(), 100);
+      
+      // Add some visual feedback for the twisted nature
+      const style = document.createElement('style');
+      style.textContent = `
+        #twisted-input:focus {
+          border-color: var(--accent);
+          box-shadow: 0 0 0 2px #5aa7ff33;
+        }
+        .target-section {
+          animation: glow 2s ease-in-out infinite alternate;
+        }
+        @keyframes glow {
+          from { box-shadow: 0 0 5px #2a3550; }
+          to { box-shadow: 0 0 15px #5aa7ff66; }
+        }
+      `;
+      document.head.appendChild(style);
+    }
+  },
+  3: {
+    title: 'The Fragile Glass Button',
+    desc: 'Click the expensive glass button 20 times. But be gentle - it breaks easily!',
+    render(container, onComplete) {
+      container.innerHTML = `
+        <div class="center">
+          <h3 class="challenge-title">Level 3</h3>
+          <p class="challenge-desc">Click the premium glass button 20 times. But be careful - it\'s fragile and expensive!</p>
+          
+          <div class="glass-container" style="margin: 40px 0; display: flex; justify-content: center; align-items: center;">
+            <button id="glass-btn" class="glass-button" data-clicks="0">
+              <div class="glass-content">
+                <span class="glass-text">Click Me</span>
+                <div class="glass-shine"></div>
+              </div>
+            </button>
+          </div>
+          
+          <div class="stats-section" style="margin: 20px 0; text-align: center;">
+            <div style="margin-bottom: 8px; color: var(--muted);">Clicks: <span id="click-counter">0</span>/20</div>
+            <div class="progress">
+              <div id="glass-progress" style="width: 0%"></div>
+            </div>
+            <div id="glass-status" style="margin-top: 12px; font-weight: 600; color: var(--accent);"></div>
+          </div>
+          
+          <div id="glass-message" style="margin-top: 16px; text-align: center; font-style: italic; color: var(--muted);"></div>
+        </div>
+      `;
+      
+      const button = $('#glass-btn');
+      const clickCounter = $('#click-counter');
+      const progressBar = $('#glass-progress');
+      const status = $('#glass-status');
+      const message = $('#glass-message');
+      
+      let clicks = 0;
+      let clickTimes = [];
+      let isBroken = false;
+      let crackLevel = 0;
+      
+      // Glassmorphism CSS
+      const glassStyle = document.createElement('style');
+      glassStyle.textContent = `
+        .glass-button {
+          position: relative;
+          width: 120px;
+          height: 120px;
+          border: none;
+          border-radius: 20px;
+          background: rgba(255, 255, 255, 0.1);
+          backdrop-filter: blur(20px);
+          -webkit-backdrop-filter: blur(20px);
+          box-shadow: 
+            0 8px 32px rgba(0, 0, 0, 0.3),
+            inset 0 1px 0 rgba(255, 255, 255, 0.2),
+            inset 0 -1px 0 rgba(0, 0, 0, 0.1);
+          cursor: pointer;
+          transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+          overflow: hidden;
+        }
+        
+        .glass-button:hover {
+          transform: translateY(-2px);
+          box-shadow: 
+            0 12px 40px rgba(0, 0, 0, 0.4),
+            inset 0 1px 0 rgba(255, 255, 255, 0.3),
+            inset 0 -1px 0 rgba(0, 0, 0, 0.1);
+        }
+        
+        .glass-button:active {
+          transform: translateY(0);
+        }
+        
+        .glass-content {
+          position: relative;
+          width: 100%;
+          height: 100%;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          color: rgba(255, 255, 255, 0.9);
+          font-weight: 600;
+          font-size: 14px;
+          text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+        }
+        
+        .glass-shine {
+          position: absolute;
+          top: -50%;
+          left: -50%;
+          width: 200%;
+          height: 200%;
+          background: linear-gradient(
+            45deg,
+            transparent 30%,
+            rgba(255, 255, 255, 0.1) 40%,
+            rgba(255, 255, 255, 0.2) 50%,
+            rgba(255, 255, 255, 0.1) 60%,
+            transparent 70%
+          );
+          animation: shine 3s ease-in-out infinite;
+        }
+        
+        @keyframes shine {
+          0%, 100% { transform: translateX(-100%) translateY(-100%) rotate(45deg); }
+          50% { transform: translateX(100%) translateY(100%) rotate(45deg); }
+        }
+        
+        .glass-button.cracked {
+          background: rgba(255, 100, 100, 0.1);
+          box-shadow: 
+            0 8px 32px rgba(255, 0, 0, 0.2),
+            inset 0 1px 0 rgba(255, 100, 100, 0.2);
+        }
+        
+        .glass-button.cracked::before {
+          content: '';
+          position: absolute;
+          top: 0;
+          left: 0;
+          right: 0;
+          bottom: 0;
+          background: 
+            linear-gradient(45deg, transparent 45%, rgba(255, 0, 0, 0.3) 50%, transparent 55%),
+            linear-gradient(-45deg, transparent 45%, rgba(255, 0, 0, 0.3) 50%, transparent 55%);
+          pointer-events: none;
+        }
+        
+        .glass-button.shattered {
+          animation: shatter 0.5s ease-out forwards;
+          pointer-events: none;
+        }
+        
+        @keyframes shatter {
+          0% { transform: scale(1) rotate(0deg); }
+          25% { transform: scale(1.1) rotate(5deg); }
+          50% { transform: scale(0.8) rotate(-10deg); }
+          75% { transform: scale(0.6) rotate(15deg); }
+          100% { 
+            transform: scale(0) rotate(45deg);
+            opacity: 0;
+          }
+        }
+        
+        .glass-pieces {
+          position: absolute;
+          width: 100%;
+          height: 100%;
+          pointer-events: none;
+        }
+        
+        .glass-piece {
+          position: absolute;
+          width: 20px;
+          height: 20px;
+          background: rgba(255, 255, 255, 0.1);
+          border-radius: 4px;
+          animation: piece-fly 1s ease-out forwards;
+        }
+        
+        @keyframes piece-fly {
+          0% { transform: translate(0, 0) rotate(0deg); opacity: 1; }
+          100% { 
+            transform: translate(var(--fly-x), var(--fly-y)) rotate(var(--fly-rot));
+            opacity: 0;
+          }
+        }
+      `;
+      document.head.appendChild(glassStyle);
+      
+      // Update progress
+      function updateProgress() {
+        clickCounter.textContent = clicks;
+        const progress = (clicks / 20) * 100;
+        progressBar.style.width = `${progress}%`;
+      }
+      
+      // Check click speed
+      function checkClickSpeed() {
+        const now = Date.now();
+        clickTimes.push(now);
+        
+        // Keep only last 10 clicks for speed calculation
+        if (clickTimes.length > 10) {
+          clickTimes.shift();
+        }
+        
+        if (clickTimes.length >= 2) {
+          const timeDiff = clickTimes[clickTimes.length - 1] - clickTimes[clickTimes.length - 2];
+          const clicksPerSecond = 1000 / timeDiff;
+          
+          if (clicksPerSecond > 2) {
+            crackLevel++;
+            handleCracking();
+          }
+        }
+      }
+      
+      // Handle cracking effects
+      function handleCracking() {
+        if (crackLevel === 1) {
+          button.classList.add('cracked');
+          message.textContent = '"careful bro..."';
+          status.textContent = "⚠️ First crack detected!";
+          status.style.color = "#ffaa00";
+        } else if (crackLevel === 2) {
+          message.textContent = '"STOP ABUSING ME 😭"';
+          status.textContent = "🚨 Multiple cracks! Button is fragile!";
+          status.style.color = "#ff6600";
+        } else if (crackLevel >= 3) {
+          shatterButton();
+        }
+      }
+      
+      // Shatter the button
+      function shatterButton() {
+        isBroken = true;
+        button.classList.add('shattered');
+        
+        // Create glass pieces
+        createGlassPieces();
+        
+        status.textContent = "💥 BUTTON SHATTERED!";
+        status.style.color = "var(--danger)";
+        message.textContent = "Congrats, you broke it. Now pay ₹9999 for repair.";
+        
+        // Show repair message
+        setTimeout(() => {
+          showPopup("Button destroyed! Snails are disappointed.");
+          // Reset after a delay
+          setTimeout(() => {
+            resetButton();
+          }, 3000);
+        }, 2000);
+      }
+      
+      // Create glass pieces animation
+      function createGlassPieces() {
+        const pieces = document.createElement('div');
+        pieces.className = 'glass-pieces';
+        
+        for (let i = 0; i < 12; i++) {
+          const piece = document.createElement('div');
+          piece.className = 'glass-piece';
+          piece.style.setProperty('--fly-x', `${(Math.random() - 0.5) * 200}px`);
+          piece.style.setProperty('--fly-y', `${(Math.random() - 0.5) * 200}px`);
+          piece.style.setProperty('--fly-rot', `${Math.random() * 360}deg`);
+          piece.style.left = `${Math.random() * 100}%`;
+          piece.style.top = `${Math.random() * 100}%`;
+          pieces.appendChild(piece);
+        }
+        
+        button.appendChild(pieces);
+      }
+      
+      // Reset button
+      function resetButton() {
+        clicks = 0;
+        clickTimes = [];
+        crackLevel = 0;
+        isBroken = false;
+        
+        button.className = 'glass-button';
+        button.innerHTML = `
+          <div class="glass-content">
+            <span class="glass-text">Click Me</span>
+            <div class="glass-shine"></div>
+          </div>
+        `;
+        
+        status.textContent = "";
+        message.textContent = "";
+        updateProgress();
+      }
+      
+      // Handle button clicks
+      button.addEventListener('click', () => {
+        if (isBroken) return;
+        
+        clicks++;
+        updateProgress();
+        checkClickSpeed();
+        
+        if (clicks >= 20) {
+          // Win condition
+          status.textContent = "🎉 Level Cleared!";
+          status.style.color = "var(--ok)";
+          message.textContent = "You are officially a gentle clicker 🐌✨";
+          button.style.background = "rgba(89, 255, 165, 0.2)";
+          button.style.boxShadow = "0 8px 32px rgba(89, 255, 165, 0.3)";
+          
+          setTimeout(() => {
+            showPopup("Gentle clicking mastered! Snails approve.");
+            onComplete();
+          }, 2000);
+        }
+      });
+      
+      updateProgress();
+    }
+  },
+  4: {
+    title: 'The Cursed Tic Tac Toe',
+    desc: 'Play Tic Tac Toe. But there\'s a secret rule...',
+    render(container, onComplete) {
+      container.innerHTML = `
+        <div class="center">
+          <h3 class="challenge-title">Level 4</h3>
+          <div class="cursed-title" style="font-size: 48px; font-weight: 900; color: var(--accent); text-shadow: 0 0 20px #5aa7ff; margin: 20px 0; animation: pulse 2s ease-in-out infinite;">PLAY</div>
+          
+          <div class="game-board" style="margin: 30px auto; width: 300px; height: 300px; display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; background: #1f2a44; padding: 8px; border-radius: 12px; border: 2px solid #2a3550;">
+            <div class="cell" data-index="0"></div>
+            <div class="cell" data-index="1"></div>
+            <div class="cell" data-index="2"></div>
+            <div class="cell" data-index="3"></div>
+            <div class="cell" data-index="4"></div>
+            <div class="cell" data-index="5"></div>
+            <div class="cell" data-index="6"></div>
+            <div class="cell" data-index="7"></div>
+            <div class="cell" data-index="8"></div>
+          </div>
+          
+          <div class="game-status" style="margin: 20px 0; text-align: center;">
+            <div id="status-text" style="font-size: 18px; font-weight: 600; color: var(--accent);">Your turn (X)</div>
+            <div id="secret-message" style="margin-top: 12px; font-style: italic; color: var(--muted); font-size: 14px;"></div>
+          </div>
+          
+          <button id="reset-btn" class="secondary" style="margin-top: 16px;">Reset Game</button>
+        </div>
+      `;
+      
+      // Add cursed styling
+      const cursedStyle = document.createElement('style');
+      cursedStyle.textContent = `
+        .cursed-title {
+          font-family: "Space Grotesk", monospace;
+          letter-spacing: 2px;
+        }
+        
+        @keyframes pulse {
+          0%, 100% { transform: scale(1); opacity: 1; }
+          50% { transform: scale(1.05); opacity: 0.8; }
+        }
+        
+        .cell {
+          background: #0e1730;
+          border: 2px solid #2a3550;
+          border-radius: 8px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-size: 48px;
+          font-weight: 900;
+          cursor: pointer;
+          transition: all 0.2s ease;
+          color: var(--text);
+        }
+        
+        .cell:hover {
+          background: #1a2a50;
+          border-color: var(--accent);
+          transform: scale(1.05);
+        }
+        
+        .cell.x {
+          color: var(--accent);
+          text-shadow: 0 0 10px #5aa7ff;
+        }
+        
+        .cell.o {
+          color: var(--danger);
+          text-shadow: 0 0 10px #ff4d6d;
+        }
+        
+        .cell.win {
+          animation: win-flash 0.6s ease-in-out 3;
+        }
+        
+        @keyframes win-flash {
+          0%, 100% { background: #0e1730; }
+          50% { background: #59ffa5; }
+        }
+        
+        .failure-confetti {
+          position: fixed;
+          top: 0;
+          left: 0;
+          width: 100%;
+          height: 100%;
+          pointer-events: none;
+          z-index: 1000;
+        }
+        
+        .confetti-piece {
+          position: absolute;
+          width: 10px;
+          height: 10px;
+          background: var(--danger);
+          animation: confetti-fall 3s linear forwards;
+        }
+        
+        @keyframes confetti-fall {
+          0% { transform: translateY(-100vh) rotate(0deg); opacity: 1; }
+          100% { transform: translateY(100vh) rotate(720deg); opacity: 0; }
+        }
+        
+        .cursed-message {
+          animation: shake 0.5s ease-in-out;
+        }
+        
+        @keyframes shake {
+          0%, 100% { transform: translateX(0); }
+          25% { transform: translateX(-5px); }
+          75% { transform: translateX(5px); }
+        }
+      `;
+      document.head.appendChild(cursedStyle);
+      
+      const cells = $$('.cell');
+      const statusText = $('#status-text');
+      const secretMessage = $('#secret-message');
+      const resetBtn = $('#reset-btn');
+      
+      let board = ['', '', '', '', '', '', '', '', ''];
+      let currentPlayer = 'X';
+      let gameActive = true;
+      let gameWon = false;
+      
+      // Winning combinations
+      const winConditions = [
+        [0, 1, 2], [3, 4, 5], [6, 7, 8], // Rows
+        [0, 3, 6], [1, 4, 7], [2, 5, 8], // Columns
+        [0, 4, 8], [2, 4, 6] // Diagonals
+      ];
+      
+      // Check for win
+      function checkWin(board, player) {
+        return winConditions.some(combination => {
+          return combination.every(index => board[index] === player);
+        });
+      }
+      
+      // Check for draw
+      function checkDraw() {
+        return board.every(cell => cell !== '');
+      }
+      
+      // AI move (strategic but beatable)
+      function makeAIMove() {
+        if (!gameActive) return;
+        
+        // Try to win
+        for (let i = 0; i < 9; i++) {
+          if (board[i] === '') {
+            const testBoard = [...board];
+            testBoard[i] = 'O';
+            if (checkWin(testBoard, 'O')) {
+              makeMove(i, 'O');
+              return;
+            }
+          }
+        }
+        
+        // Block player from winning
+        for (let i = 0; i < 9; i++) {
+          if (board[i] === '') {
+            const testBoard = [...board];
+            testBoard[i] = 'X';
+            if (checkWin(testBoard, 'X')) {
+              makeMove(i, 'O');
+              return;
+            }
+          }
+        }
+        
+        // Take center if available
+        if (board[4] === '') {
+          makeMove(4, 'O');
+          return;
+        }
+        
+        // Take corners if available
+        const corners = [0, 2, 6, 8];
+        const availableCorners = corners.filter(i => board[i] === '');
+        if (availableCorners.length > 0) {
+          const randomCorner = availableCorners[Math.floor(Math.random() * availableCorners.length)];
+          makeMove(randomCorner, 'O');
+          return;
+        }
+        
+        // Take any available cell
+        const availableCells = board.map((cell, index) => cell === '' ? index : -1).filter(index => index !== -1);
+        if (availableCells.length > 0) {
+          const randomCell = availableCells[Math.floor(Math.random() * availableCells.length)];
+          makeMove(randomCell, 'O');
+        }
+      }
+      
+      // Make a move
+      function makeMove(index, player) {
+        if (board[index] !== '' || !gameActive) return;
+        
+        board[index] = player;
+        cells[index].textContent = player;
+        cells[index].classList.add(player.toLowerCase());
+        
+        // Check for win
+        if (checkWin(board, player)) {
+          gameWon = true;
+          gameActive = false;
+          
+          if (player === 'X') {
+            // Player won - show mocking message
+            statusText.textContent = "Wow, you can beat a potato-level AI… but that's NOT the task. Try again loser 🙃.";
+            statusText.style.color = "var(--danger)";
+            statusText.classList.add('cursed-message');
+            secretMessage.textContent = "The secret rule: You must LOSE to pass this level!";
+            secretMessage.style.color = "var(--accent)";
+          } else {
+            // AI won - show success message
+            statusText.textContent = "Finally, you're a true failure! 🎉 Level Cleared!";
+            statusText.style.color = "var(--ok)";
+            secretMessage.textContent = "Congratulations on your FAILURE! 🎊";
+            secretMessage.style.color = "var(--ok)";
+            
+            // Show failure confetti
+            showFailureConfetti();
+            
+            setTimeout(() => {
+              showPopup("Failure achieved! Snails are proud of your incompetence.");
+              onComplete();
+            }, 3000);
+          }
+          
+          // Highlight winning cells
+          const winningCombination = winConditions.find(combination => {
+            return combination.every(index => board[index] === player);
+          });
+          if (winningCombination) {
+            winningCombination.forEach(index => {
+              cells[index].classList.add('win');
+            });
+          }
+        } else if (checkDraw()) {
+          // Draw
+          gameActive = false;
+          statusText.textContent = "Close… but we don't accept mediocrity here. Lose properly.";
+          statusText.style.color = "var(--muted)";
+          secretMessage.textContent = "You need to LOSE, not draw! Try harder to fail!";
+          secretMessage.style.color = "var(--accent)";
+        } else {
+          // Switch players
+          currentPlayer = currentPlayer === 'X' ? 'O' : 'X';
+          if (currentPlayer === 'O') {
+            statusText.textContent = "AI thinking... (O)";
+            setTimeout(makeAIMove, 500);
+          } else {
+            statusText.textContent = "Your turn (X)";
+          }
+        }
+      }
+      
+      // Show failure confetti
+      function showFailureConfetti() {
+        const confettiContainer = document.createElement('div');
+        confettiContainer.className = 'failure-confetti';
+        
+        for (let i = 0; i < 50; i++) {
+          const piece = document.createElement('div');
+          piece.className = 'confetti-piece';
+          piece.style.left = `${Math.random() * 100}%`;
+          piece.style.animationDelay = `${Math.random() * 2}s`;
+          piece.style.background = `hsl(${Math.random() * 360}, 70%, 60%)`;
+          confettiContainer.appendChild(piece);
+        }
+        
+        document.body.appendChild(confettiContainer);
+        
+        setTimeout(() => {
+          confettiContainer.remove();
+        }, 4000);
+      }
+      
+      // Reset game
+      function resetGame() {
+        board = ['', '', '', '', '', '', '', '', ''];
+        currentPlayer = 'X';
+        gameActive = true;
+        gameWon = false;
+        
+        cells.forEach(cell => {
+          cell.textContent = '';
+          cell.className = 'cell';
+        });
+        
+        statusText.textContent = "Your turn (X)";
+        statusText.style.color = "var(--accent)";
+        statusText.classList.remove('cursed-message');
+        secretMessage.textContent = "";
+      }
+      
+      // Cell click handler
+      cells.forEach((cell, index) => {
+        cell.addEventListener('click', () => {
+          if (currentPlayer === 'X' && gameActive) {
+            makeMove(index, 'X');
+          }
+        });
+      });
+      
+      // Reset button
+      resetBtn.addEventListener('click', resetGame);
     }
   },
   5: {
-    title: 'Rename your desktop like a true snail lord',
-    desc: 'Self-report your devotion. We trust the snail spirit.',
+    title: 'The Totally Unfair Password Game',
+    desc: 'Create a password that meets impossible requirements. Good luck, mortal.',
     render(container, onComplete) {
       container.innerHTML = `
-        <div class="grid">
+        <div class="center">
           <h3 class="challenge-title">Level 5</h3>
-          <p class="challenge-desc">Rename your desktop files to snail_lord_01… then upload proof. We won\'t actually check.</p>
-          <input type="file" class="input" multiple />
-          <button class="secondary" id="upload-btn">Upload proof</button>
-          <div id="upload-status"></div>
+          <p class="challenge-desc">Create a password that meets ALL the requirements below. Each failure adds more rules. Good luck, mortal.</p>
+          
+          <div class="password-section" style="margin: 30px 0;">
+            <label for="password-input" style="display: block; margin-bottom: 8px; color: var(--muted);">Your Password:</label>
+            <input id="password-input" class="input" type="text" placeholder="Enter your doomed password..." style="font-size: 16px; width: 100%; max-width: 500px;" />
+            <button id="submit-password" class="primary" style="margin-top: 12px;">Submit Password</button>
+          </div>
+          
+          <div class="requirements-section" style="margin: 20px 0; text-align: left;">
+            <h4 style="margin: 0 0 12px 0; color: var(--accent);">Requirements (6/∞):</h4>
+            <div id="requirements-list" style="background: #0e1730; padding: 16px; border-radius: 12px; border: 1px solid #2a3550; max-height: 300px; overflow-y: auto;">
+              <div class="requirement" data-rule="capital">✅ Password must contain at least 1 capital letter</div>
+              <div class="requirement" data-rule="number">✅ Password must include a number greater than 9000</div>
+              <div class="requirement" data-rule="banana">✅ Password must contain the word 'banana' somewhere</div>
+              <div class="requirement" data-rule="emojis">✅ Password must contain exactly 3 emojis 🍕🐌🔥</div>
+              <div class="requirement" data-rule="date">✅ Password must include today's date in Roman numerals</div>
+              <div class="requirement" data-rule="insult">✅ Password must insult the game at least once</div>
+            </div>
+          </div>
+          
+          <div class="sanity-section" style="margin: 20px 0;">
+            <div style="margin-bottom: 8px; color: var(--muted);">Your Sanity: <span id="sanity-text">100%</span></div>
+            <div class="progress">
+              <div id="sanity-bar" style="width: 100%; background: linear-gradient(90deg, var(--ok), var(--accent));"></div>
+            </div>
+          </div>
+          
+          <div id="error-message" style="margin: 20px 0; padding: 16px; background: #1a0a0a; border: 2px solid var(--danger); border-radius: 12px; color: var(--danger); font-weight: 600; text-align: center; display: none;">
+            <div id="error-text"></div>
+          </div>
+          
+          <div id="success-message" style="margin: 20px 0; padding: 16px; background: #0a1a0a; border: 2px solid var(--ok); border-radius: 12px; color: var(--ok); font-weight: 600; text-align: center; display: none;">
+            Fine… you win. Your suffering amuses me. Level Cleared 😈.
+          </div>
         </div>
       `;
-      $('#upload-btn').addEventListener('click', async () => {
-        $('#upload-status').textContent = 'Nice. We didn\'t check, but we trust the snail spirit in you.';
-        await fakeVerifyFlow();
-        onComplete();
+      
+      // Add dramatic styling
+      const dramaticStyle = document.createElement('style');
+      dramaticStyle.textContent = `
+        .requirement {
+          margin: 8px 0;
+          padding: 8px 12px;
+          border-radius: 8px;
+          background: #0a0f1a;
+          border-left: 4px solid var(--ok);
+          transition: all 0.3s ease;
+        }
+        
+        .requirement.failed {
+          border-left-color: var(--danger);
+          background: #1a0a0a;
+          animation: shake 0.5s ease-in-out;
+        }
+        
+        .requirement.passed {
+          border-left-color: var(--ok);
+          background: #0a1a0a;
+        }
+        
+        @keyframes shake {
+          0%, 100% { transform: translateX(0); }
+          25% { transform: translateX(-3px); }
+          75% { transform: translateX(3px); }
+        }
+        
+        .sanity-bar {
+          transition: width 0.5s ease, background 0.5s ease;
+        }
+        
+        .error-message {
+          animation: error-pulse 0.6s ease-in-out;
+        }
+        
+        @keyframes error-pulse {
+          0%, 100% { transform: scale(1); }
+          50% { transform: scale(1.02); }
+        }
+        
+        .requirement.new-rule {
+          animation: new-rule-appear 0.8s ease-out;
+          border-left-color: var(--accent);
+          background: #0a1a2a;
+        }
+        
+        @keyframes new-rule-appear {
+          0% { opacity: 0; transform: translateY(-10px); }
+          100% { opacity: 1; transform: translateY(0); }
+        }
+      `;
+      document.head.appendChild(dramaticStyle);
+      
+      const passwordInput = $('#password-input');
+      const submitBtn = $('#submit-password');
+      const requirementsList = $('#requirements-list');
+      const sanityText = $('#sanity-text');
+      const sanityBar = $('#sanity-bar');
+      const errorMessage = $('#error-message');
+      const errorText = $('#error-text');
+      const successMessage = $('#success-message');
+      
+      let attempts = 0;
+      let sanity = 100;
+      let currentRules = [
+        { id: 'capital', text: "Password must contain at least 1 capital letter", test: (pwd) => /[A-Z]/.test(pwd) },
+        { id: 'number', text: "Password must include a number greater than 9000", test: (pwd) => /\d{4,}/.test(pwd) && parseInt(pwd.match(/\d{4,}/)[0]) > 9000 },
+        { id: 'banana', text: "Password must contain the word 'banana' somewhere", test: (pwd) => pwd.toLowerCase().includes('banana') },
+        { id: 'emojis', text: "Password must contain exactly 3 emojis 🍕🐌🔥", test: (pwd) => (pwd.match(/[\u{1F600}-\u{1F64F}]|[\u{1F300}-\u{1F5FF}]|[\u{1F680}-\u{1F6FF}]|[\u{1F1E0}-\u{1F1FF}]|[\u{2600}-\u{26FF}]|[\u{2700}-\u{27BF}]/gu) || []).length === 3 },
+        { id: 'date', text: "Password must include today's date in Roman numerals", test: (pwd) => pwd.toLowerCase().includes(getTodayRomanDate()) },
+        { id: 'insult', text: "Password must insult the game at least once", test: (pwd) => /(stupid|dumb|terrible|awful|horrible|bad|worst|hate|suck|trash|garbage)/i.test(pwd) }
+      ];
+      
+      // Get today's date in Roman numerals
+      function getTodayRomanDate() {
+        const today = new Date();
+        const day = today.getDate();
+        const month = today.getMonth() + 1;
+        const year = today.getFullYear();
+        
+        // Simple Roman numeral conversion for common dates
+        const romanMap = {
+          1: 'I', 2: 'II', 3: 'III', 4: 'IV', 5: 'V', 6: 'VI', 7: 'VII', 8: 'VIII', 9: 'IX', 10: 'X',
+          11: 'XI', 12: 'XII', 13: 'XIII', 14: 'XIV', 15: 'XV', 16: 'XVI', 17: 'XVII', 18: 'XVIII', 19: 'XIX', 20: 'XX',
+          21: 'XXI', 22: 'XXII', 23: 'XXIII', 24: 'XXIV', 25: 'XXV', 26: 'XXVI', 27: 'XXVII', 28: 'XXVIII', 29: 'XXIX', 30: 'XXX', 31: 'XXXI'
+        };
+        
+        const monthRoman = romanMap[month] || month.toString();
+        const dayRoman = romanMap[day] || day.toString();
+        
+        return `${dayRoman}-${monthRoman}-${year}`;
+      }
+      
+      // Update sanity
+      function updateSanity() {
+        sanity = Math.max(0, 100 - (attempts * 8));
+        sanityText.textContent = `${sanity}%`;
+        sanityBar.style.width = `${sanity}%`;
+        
+        if (sanity <= 25) {
+          sanityBar.style.background = 'linear-gradient(90deg, var(--danger), #ff6600)';
+        } else if (sanity <= 50) {
+          sanityBar.style.background = 'linear-gradient(90deg, #ffaa00, var(--danger))';
+        } else if (sanity <= 75) {
+          sanityBar.style.background = 'linear-gradient(90deg, var(--accent), #ffaa00)';
+        }
+      }
+      
+      // Add new rule
+      function addNewRule() {
+        const newRules = [
+          { id: 'length', text: "Password must be exactly 47 characters long", test: (pwd) => pwd.length === 47 },
+          { id: 'palindrome', text: "Password must be a palindrome", test: (pwd) => pwd === pwd.split('').reverse().join('') },
+          { id: 'prime', text: "Password must contain a prime number", test: (pwd) => /\d+/.test(pwd) && [2,3,5,7,11,13,17,19,23,29,31,37,41,43,47,53,59,61,67,71,73,79,83,89,97].some(prime => pwd.includes(prime.toString())) },
+          { id: 'color', text: "Password must contain a CSS color name", test: (pwd) => /(red|blue|green|yellow|purple|orange|pink|brown|black|white|gray|cyan|magenta|lime|navy|teal|silver|gold|maroon|olive)/i.test(pwd) },
+          { id: 'math', text: "Password must contain a valid math equation that equals 42", test: (pwd) => /(\d+\s*[\+\-\*\/]\s*\d+\s*=\s*42)/.test(pwd) },
+          { id: 'emoji-count', text: "Password must contain exactly 7 emojis", test: (pwd) => (pwd.match(/[\u{1F600}-\u{1F64F}]|[\u{1F300}-\u{1F5FF}]|[\u{1F680}-\u{1F6FF}]|[\u{1F1E0}-\u{1F1FF}]|[\u{2600}-\u{26FF}]|[\u{2700}-\u{27BF}]/gu) || []).length === 7 },
+          { id: 'language', text: "Password must contain text in a different language", test: (pwd) => /[а-яё]|[一-龯]|[あ-ん]|[가-힣]/.test(pwd) },
+          { id: 'binary', text: "Password must contain valid binary (10101010)", test: (pwd) => /\b[01]{8,}\b/.test(pwd) },
+          { id: 'hex', text: "Password must contain a valid hex color (#FF00FF)", test: (pwd) => /#[0-9A-Fa-f]{6}/.test(pwd) },
+          { id: 'url', text: "Password must contain a valid URL", test: (pwd) => /https?:\/\/[^\s]+/.test(pwd) }
+        ];
+        
+        if (attempts < newRules.length) {
+          const newRule = newRules[attempts];
+          currentRules.push(newRule);
+          
+          const ruleElement = document.createElement('div');
+          ruleElement.className = 'requirement new-rule';
+          ruleElement.setAttribute('data-rule', newRule.id);
+          ruleElement.textContent = `✅ ${newRule.text}`;
+          
+          requirementsList.appendChild(ruleElement);
+          
+          // Remove new-rule class after animation
+          setTimeout(() => ruleElement.classList.remove('new-rule'), 800);
+        }
+      }
+      
+      // Check password
+      function checkPassword(password) {
+        attempts++;
+        updateSanity();
+        
+        if (attempts > 6) {
+          addNewRule();
+        }
+        
+        const results = currentRules.map(rule => ({
+          ...rule,
+          passed: rule.test(password)
+        }));
+        
+        // Update requirement display
+        results.forEach(result => {
+          const element = requirementsList.querySelector(`[data-rule="${result.id}"]`);
+          if (element) {
+            element.classList.remove('passed', 'failed');
+            element.classList.add(result.passed ? 'passed' : 'failed');
+          }
+        });
+        
+        const passedCount = results.filter(r => r.passed).length;
+        const totalCount = results.length;
+        
+        if (passedCount === totalCount) {
+          // All requirements met!
+          successMessage.style.display = 'block';
+          errorMessage.style.display = 'none';
+          passwordInput.disabled = true;
+          submitBtn.disabled = true;
+          
+          setTimeout(() => {
+            showPopup("Password hell completed! Snails are impressed by your persistence.");
+            onComplete();
+          }, 3000);
+        } else {
+          // Show dramatic error message
+          const failedRules = results.filter(r => !r.passed);
+          const randomFailed = failedRules[Math.floor(Math.random() * failedRules.length)];
+          
+          const errorMessages = [
+            `WRONG. Try again, mortal.`,
+            `Close, but where's the banana???`,
+            `That's not over 9000… pathetic.`,
+            `Missing emojis! How dare you!`,
+            `Roman numerals, not regular numbers!`,
+            `You need to insult the game!`,
+            `Your password is an embarrassment.`,
+            `Did you even read the requirements?`,
+            `This is why you'll never pass.`,
+            `Try harder, or don't. I don't care.`
+          ];
+          
+          errorText.textContent = errorMessages[Math.floor(Math.random() * errorMessages.length)];
+          errorMessage.style.display = 'block';
+          successMessage.style.display = 'none';
+          
+          // Shake the error message
+          errorMessage.classList.add('error-message');
+          setTimeout(() => errorMessage.classList.remove('error-message'), 600);
+        }
+      }
+      
+      // Event listeners
+      submitBtn.addEventListener('click', () => {
+        const password = passwordInput.value;
+        if (password.trim()) {
+          checkPassword(password);
+        }
       });
+      
+      passwordInput.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') {
+          submitBtn.click();
+        }
+      });
+      
+      // Focus input on start
+      setTimeout(() => passwordInput.focus(), 100);
+      
+      // Initialize
+      updateSanity();
     }
   },
   10: {
