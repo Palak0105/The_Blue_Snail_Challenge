@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>The Blue Snail Challenge</title>
+    <meta name="description" content="A safe, absurd, satirical 50-level patience test. Snails approve." />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;900&family=Space+Grotesk:wght@400;700&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <div id="app">
+      <header class="app-header">
+        <div class="logo-row">
+          <div class="logo">🐌</div>
+          <div class="title-stack">
+            <h1 class="title">The Blue Snail Challenge</h1>
+            <p class="subtitle">50 Tasks. 50 Days. Do you dare?</p>
+          </div>
+        </div>
+      </header>
+
+      <main id="view-root">
+        <section id="landing" class="view visible">
+          <div class="hero">
+            <h2 class="ominous">Welcome, Challenger.</h2>
+            <p class="tagline">A parody of challenge culture. Ominous. Pointless. Hilarious.</p>
+            <button id="start-btn" class="cta moving">Enter the Snail Lair</button>
+            <div class="disclaimer">This is satire. No harm. Just vibes and mild annoyance.</div>
+          </div>
+        </section>
+
+        <section id="game" class="view">
+          <div class="hud">
+            <div class="hud-left">
+              <div class="level-indicator">Level <span id="level-index">1</span> / 50</div>
+              <div class="timer">⏱ <span id="timer-value">00:00</span></div>
+            </div>
+            <div class="hud-right">
+              <div class="patience">
+                Patience
+                <div class="meter" aria-label="patience meter"><div id="patience-fill"></div></div>
+              </div>
+              <button id="rage-quit" class="danger">Rage Quit</button>
+            </div>
+          </div>
+
+          <div id="challenge-container"></div>
+
+          <div class="controls">
+            <button id="verify-btn" class="primary">Verify Completion</button>
+            <button id="next-btn" class="secondary" disabled>Next</button>
+          </div>
+        </section>
+
+        <section id="leaderboard" class="view">
+          <div class="board">
+            <h2>Leaderboard</h2>
+            <p class="smug">Everyone is stuck at Level 2. Even you.</p>
+            <ul id="leaderboard-list"></ul>
+            <button id="back-to-game" class="secondary">Back</button>
+          </div>
+        </section>
+      </main>
+
+      <footer class="app-footer">
+        <button id="open-leaderboard" class="link">Leaderboard</button>
+        <button id="toggle-audio" class="link">Mute Elevator Music</button>
+        <div class="glitch" aria-hidden="true">Snail is watching.</div>
+      </footer>
+    </div>
+
+    <script src="./app.js"></script>
+  </body>
+  </html>
+
+
