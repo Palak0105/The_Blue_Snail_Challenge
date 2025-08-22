@@ -224,11 +224,8 @@ const Challenges = {
       button.addEventListener('mouseenter', () => {
         isHovering = true;
         hoverTimer = setTimeout(() => {
-          if (isHovering) {
-            moveButton();
-            showPopup('Too slow! Button moved.');
-          }
-        }, 500);
+          if (isHovering) moveButton();
+        }, 200); // Button moves after 200ms hover
       });
       
       button.addEventListener('mouseleave', () => {
@@ -291,6 +288,21 @@ const Challenges = {
       const progressBar = $('#level2-progress');
       const status = $('#level2-status');
       
+      let isCorrect = false;
+
+      const charMap = 'abcdefghijklmnopqrstuvwxyz';
+      let twistedMap = {};
+      
+      // Generate a random twisted map
+      function generateTwistedMap() {
+        const shuffledChars = charMap.split('').sort(() => 0.5 - Math.random());
+        for (let i = 0; i < charMap.length; i++) {
+          twistedMap[charMap[i]] = shuffledChars[i];
+        }
+      }
+
+      generateTwistedMap(); // Generate map on render
+      
       // Letter mapping (simple substitution cipher)
       const letterMap = {
         'a': 'q', 'b': 'w', 'c': 'e', 'd': 'r', 'e': 't', 'f': 'y', 'g': 'u', 'h': 'i',
@@ -334,27 +346,47 @@ const Challenges = {
       }
       
       // Handle input
-      input.addEventListener('input', (e) => {
-        const value = e.target.value;
-        mappedOutput = "";
-        currentTyped = "";
-        
-        // Process each character
-        for (let char of value) {
-          const lowerChar = char.toLowerCase();
-          if (letterMap[lowerChar]) {
-            mappedOutput += letterMap[lowerChar];
-            currentTyped += reverseMap[letterMap[lowerChar]];
+      input.addEventListener('input', () => {
+        const rawText = input.value.toLowerCase();
+        let mappedOutput = '';
+        let currentProgress = 0;
+
+        for (let i = 0; i < rawText.length; i++) {
+          const char = rawText[i];
+          if (char in twistedMap) {
+            mappedOutput += twistedMap[char];
           } else {
-            mappedOutput += char;
-            currentTyped += char;
+            mappedOutput += char; // Keep non-alphabet characters as is
           }
         }
         
-        // Update display
         mappedText.textContent = mappedOutput;
-        updateProgress();
-        checkCompletion();
+        
+        // Check against target text
+        const targetLen = targetSentence.length;
+        const currentMappedLen = mappedOutput.length;
+        
+        if (mappedOutput === targetSentence.substring(0, currentMappedLen)) {
+          // Correct input, update progress
+          currentProgress = (currentMappedLen / targetLen) * 100;
+          progressBar.style.width = `${currentProgress}%`;
+          progressText.textContent = `${Math.floor(currentProgress)}%`;
+
+          if (mappedOutput === targetSentence) {
+            // Level complete
+            isCorrect = true;
+            status.textContent = "🎉 Level Cleared!";
+            status.style.color = "var(--ok)";
+            showPopup("Twisted typing mastered! Snails approve.");
+            onComplete();
+            input.disabled = true; // Disable input after completion
+          }
+        } else {
+          // Incorrect input, reset progress and display error
+          status.textContent = "🚫 Incorrect sequence. Try again!";
+          status.style.color = "var(--danger)";
+          // Optionally reset input or just show error for now
+        }
       });
       
       // Focus input on start
@@ -418,6 +450,7 @@ const Challenges = {
       let clickTimes = [];
       let isBroken = false;
       let crackLevel = 0;
+      const crackThresholds = [5, 10, 15]; // Clicks at which cracks appear/intensify
       
       // Glassmorphism CSS
       const glassStyle = document.createElement('style');
@@ -487,14 +520,7 @@ const Challenges = {
           50% { transform: translateX(100%) translateY(100%) rotate(45deg); }
         }
         
-        .glass-button.cracked {
-          background: rgba(255, 100, 100, 0.1);
-          box-shadow: 
-            0 8px 32px rgba(255, 0, 0, 0.2),
-            inset 0 1px 0 rgba(255, 100, 100, 0.2);
-        }
-        
-        .glass-button.cracked::before {
+        .glass-button.crack-one::before {
           content: '';
           position: absolute;
           top: 0;
@@ -502,24 +528,48 @@ const Challenges = {
           right: 0;
           bottom: 0;
           background: 
-            linear-gradient(45deg, transparent 45%, rgba(255, 0, 0, 0.3) 50%, transparent 55%),
-            linear-gradient(-45deg, transparent 45%, rgba(255, 0, 0, 0.3) 50%, transparent 55%);
+            radial-gradient(circle at 50% 50%, transparent 20%, rgba(255, 0, 0, 0.2) 22%, transparent 25%),
+            linear-gradient(45deg, transparent 48%, rgba(255, 0, 0, 0.2) 50%, transparent 52%);
           pointer-events: none;
+          animation: crack-in 0.5s ease-out forwards;
+        }
+
+        .glass-button.crack-two::before {
+          content: '';
+          position: absolute;
+          top: 0;
+          left: 0;
+          right: 0;
+          bottom: 0;
+          background: 
+            radial-gradient(circle at 50% 50%, transparent 15%, rgba(255, 0, 0, 0.3) 17%, transparent 20%),
+            linear-gradient(45deg, transparent 45%, rgba(255, 0, 0, 0.3) 48%, transparent 52%),
+            linear-gradient(-45deg, transparent 45%, rgba(255, 0, 0, 0.3) 48%, transparent 52%),
+            linear-gradient(90deg, transparent 48%, rgba(255, 0, 0, 0.3) 50%, transparent 52%);
+          pointer-events: none;
+          animation: crack-in 0.5s ease-out forwards;
+        }
+
+        @keyframes crack-in {
+          0% { opacity: 0; transform: scale(0.8); }
+          100% { opacity: 1; transform: scale(1); }
         }
         
         .glass-button.shattered {
           animation: shatter 0.5s ease-out forwards;
           pointer-events: none;
+          box-shadow: 0 0 40px rgba(255, 0, 0, 0.8), 0 0 20px rgba(255, 100, 100, 0.6);
         }
         
         @keyframes shatter {
-          0% { transform: scale(1) rotate(0deg); }
-          25% { transform: scale(1.1) rotate(5deg); }
-          50% { transform: scale(0.8) rotate(-10deg); }
-          75% { transform: scale(0.6) rotate(15deg); }
+          0% { transform: scale(1) rotate(0deg); opacity: 1; }
+          25% { transform: scale(1.1) rotate(5deg); box-shadow: 0 0 40px rgba(255, 0, 0, 0.8); }
+          50% { transform: scale(0.8) rotate(-10deg); opacity: 0.8; }
+          75% { transform: scale(0.6) rotate(15deg); opacity: 0.5; }
           100% { 
             transform: scale(0) rotate(45deg);
             opacity: 0;
+            box-shadow: 0 0 0 transparent;
           }
         }
         
@@ -532,10 +582,10 @@ const Challenges = {
         
         .glass-piece {
           position: absolute;
-          width: 20px;
-          height: 20px;
-          background: rgba(255, 255, 255, 0.1);
-          border-radius: 4px;
+          width: 30px; /* Larger pieces */
+          height: 30px;
+          background: rgba(255, 255, 255, 0.15); /* Slightly more visible */
+          border-radius: 6px; /* Slightly larger border radius */
           animation: piece-fly 1s ease-out forwards;
         }
         
@@ -545,6 +595,25 @@ const Challenges = {
             transform: translate(var(--fly-x), var(--fly-y)) rotate(var(--fly-rot));
             opacity: 0;
           }
+        }
+
+        .shatter-burst {
+          position: absolute;
+          width: 150px; /* Larger burst */
+          height: 150px;
+          background: radial-gradient(circle, rgba(255, 255, 255, 0.8) 0%, rgba(255, 100, 100, 0.5) 70%, transparent 100%);
+          border-radius: 50%;
+          transform: translate(-50%, -50%) scale(0); /* Start small */
+          animation: burst-out 0.5s ease-out forwards;
+          pointer-events: none;
+          z-index: 99;
+          top: 50%;
+          left: 50%;
+        }
+
+        @keyframes burst-out {
+          0% { transform: translate(-50%, -50%) scale(0); opacity: 1; }
+          100% { transform: translate(-50%, -50%) scale(1.5); opacity: 0; }
         }
       `;
       document.head.appendChild(glassStyle);
@@ -556,12 +625,12 @@ const Challenges = {
         progressBar.style.width = `${progress}%`;
       }
       
-      // Check click speed
+      // Check click speed (no longer directly increments crackLevel for guarantee)
       function checkClickSpeed() {
+        // Original click speed logic, can be kept for other purposes or removed if not needed.
         const now = Date.now();
         clickTimes.push(now);
         
-        // Keep only last 10 clicks for speed calculation
         if (clickTimes.length > 10) {
           clickTimes.shift();
         }
@@ -570,26 +639,32 @@ const Challenges = {
           const timeDiff = clickTimes[clickTimes.length - 1] - clickTimes[clickTimes.length - 2];
           const clicksPerSecond = 1000 / timeDiff;
           
-          if (clicksPerSecond > 2) {
-            crackLevel++;
-            handleCracking();
-          }
+          // Original logic for speed-based cracking, now handled by click thresholds
+          // if (clicksPerSecond > 2) {
+          //   crackLevel++;
+          //   handleCracking();
+          // }
         }
       }
       
       // Handle cracking effects
       function handleCracking() {
         if (crackLevel === 1) {
-          button.classList.add('cracked');
+          button.classList.add('crack-one');
+          button.classList.remove('cracked');
           message.textContent = '"careful bro..."';
           status.textContent = "⚠️ First crack detected!";
           status.style.color = "#ffaa00";
         } else if (crackLevel === 2) {
+          button.classList.remove('crack-one');
+          button.classList.add('crack-two');
           message.textContent = '"STOP ABUSING ME 😭"';
           status.textContent = "🚨 Multiple cracks! Button is fragile!";
           status.style.color = "#ff6600";
         } else if (crackLevel >= 3) {
           shatterButton();
+          onComplete(); // Complete the level when it shatters
+          showPopup('Button shattered! Level Cleared.');
         }
       }
       
@@ -597,22 +672,38 @@ const Challenges = {
       function shatterButton() {
         isBroken = true;
         button.classList.add('shattered');
-        
-        // Create glass pieces
-        createGlassPieces();
-        
-        status.textContent = "💥 BUTTON SHATTERED!";
+        status.textContent = "💥 Button SHATTERED!";
         status.style.color = "var(--danger)";
-        message.textContent = "Congrats, you broke it. Now pay ₹9999 for repair.";
-        
-        // Show repair message
+        message.textContent = "You've unleashed the full power of the snail!";
+
+        // Create more glass pieces and a burst effect
+        const piecesContainer = document.createElement('div');
+        piecesContainer.className = 'glass-pieces';
+        piecesContainer.style.zIndex = '100'; // Ensure it's on top
+        button.parentNode.insertBefore(piecesContainer, button.nextSibling);
+
+        const numPieces = 30; // Increased number of pieces
+        for (let i = 0; i < numPieces; i++) {
+          const piece = document.createElement('div');
+          piece.className = 'glass-piece';
+          const angle = Math.random() * 2 * Math.PI;
+          const distance = Math.random() * 100 + 50; // Fly further
+          piece.style.setProperty('--fly-x', `${Math.cos(angle) * distance}px`);
+          piece.style.setProperty('--fly-y', `${Math.sin(angle) * distance}px`);
+          piece.style.setProperty('--fly-rot', `${Math.random() * 720 - 360}deg`); // More rotation
+          piecesContainer.appendChild(piece);
+        }
+
+        // Add a temporary burst effect
+        const burst = document.createElement('div');
+        burst.className = 'shatter-burst';
+        button.parentNode.insertBefore(burst, button.nextSibling);
+        setTimeout(() => burst.remove(), 500); // Remove burst after 0.5s
+
         setTimeout(() => {
-          showPopup("Button destroyed! Snails are disappointed.");
-          // Reset after a delay
-          setTimeout(() => {
-            resetButton();
-          }, 3000);
-        }, 2000);
+          button.remove();
+          piecesContainer.remove();
+        }, 1000); // Remove button and pieces after animation
       }
       
       // Create glass pieces animation
@@ -657,23 +748,31 @@ const Challenges = {
       // Handle button clicks
       button.addEventListener('click', () => {
         if (isBroken) return;
-        
+
         clicks++;
         updateProgress();
-        checkClickSpeed();
-        
+
+        if (clicks === crackThresholds[0] && crackLevel < 1) {
+          crackLevel = 1;
+          handleCracking();
+        } else if (clicks === crackThresholds[1] && crackLevel < 2) {
+          crackLevel = 2;
+          handleCracking();
+        } else if (clicks === crackThresholds[2] && crackLevel < 3) {
+          crackLevel = 3;
+          handleCracking();
+        } else if (clicks > crackThresholds[2] && crackLevel < 3) {
+          // Ensure shatter if clicks exceed last threshold and not yet shattered
+          crackLevel = 3;
+          handleCracking();
+        }
+
         if (clicks >= 20) {
-          // Win condition
-          status.textContent = "🎉 Level Cleared!";
-          status.style.color = "var(--ok)";
-          message.textContent = "You are officially a gentle clicker 🐌✨";
-          button.style.background = "rgba(89, 255, 165, 0.2)";
-          button.style.boxShadow = "0 8px 32px rgba(89, 255, 165, 0.3)";
-          
-          setTimeout(() => {
-            showPopup("Gentle clicking mastered! Snails approve.");
-            onComplete();
-          }, 2000);
+          // Ensure the level completes after 20 clicks, regardless of shattering
+          if (!isBroken) {
+            onComplete(); 
+            showPopup('Button endured the clicks!');
+          }
         }
       });
       
@@ -828,52 +927,22 @@ const Challenges = {
       
       // AI move (strategic but beatable)
       function makeAIMove() {
-        if (!gameActive) return;
+        const emptyCells = board.map((cell, idx) => cell === '' ? idx : -1).filter(idx => idx !== -1);
         
-        // Try to win
-        for (let i = 0; i < 9; i++) {
-          if (board[i] === '') {
-            const testBoard = [...board];
-            testBoard[i] = 'O';
-            if (checkWin(testBoard, 'O')) {
-              makeMove(i, 'O');
-              return;
-            }
+        // Easy AI: prioritize center, then corners, then random
+        const easyMoves = [4, 0, 2, 6, 8, 1, 3, 5, 7]; // Center, then corners, then sides
+
+        for (const move of easyMoves) {
+          if (emptyCells.includes(move)) {
+            handleClick(cells[move]);
+            return;
           }
         }
-        
-        // Block player from winning
-        for (let i = 0; i < 9; i++) {
-          if (board[i] === '') {
-            const testBoard = [...board];
-            testBoard[i] = 'X';
-            if (checkWin(testBoard, 'X')) {
-              makeMove(i, 'O');
-              return;
-            }
-          }
-        }
-        
-        // Take center if available
-        if (board[4] === '') {
-          makeMove(4, 'O');
-          return;
-        }
-        
-        // Take corners if available
-        const corners = [0, 2, 6, 8];
-        const availableCorners = corners.filter(i => board[i] === '');
-        if (availableCorners.length > 0) {
-          const randomCorner = availableCorners[Math.floor(Math.random() * availableCorners.length)];
-          makeMove(randomCorner, 'O');
-          return;
-        }
-        
-        // Take any available cell
-        const availableCells = board.map((cell, index) => cell === '' ? index : -1).filter(index => index !== -1);
-        if (availableCells.length > 0) {
-          const randomCell = availableCells[Math.floor(Math.random() * availableCells.length)];
-          makeMove(randomCell, 'O');
+
+        // Fallback to random if no easy move found (shouldn't happen with full board)
+        if (emptyCells.length > 0) {
+          const randomIndex = Math.floor(Math.random() * emptyCells.length);
+          handleClick(cells[emptyCells[randomIndex]]);
         }
       }
       
@@ -1292,7 +1361,7 @@ const Challenges = {
   },
   15: {
     title: 'Watch paint dry',
-    desc: 'Click “I feel enlightened.” when you truly do.',
+    desc: 'Click "I feel enlightened." when you truly do.',
     render(container, onComplete) {
       container.innerHTML = `
         <div class="grid center">

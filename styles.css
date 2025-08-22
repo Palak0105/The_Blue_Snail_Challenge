@@ -113,7 +113,6 @@ body {
     opacity: 0.9;
   }
 }
-
 .disclaimer { 
   margin-top: 12px; 
   color: var(--muted); 
@@ -177,7 +176,6 @@ button:disabled { opacity: 0.5; cursor: not-allowed; }
   0%, 100% { transform: scale(1) rotate(0deg); }
   50% { transform: scale(1.1) rotate(2deg); }
 }
-
 .timer { 
   color: var(--muted); 
   animation: timerKinetic 3s ease-in-out infinite;
