@@ -262,4 +262,155 @@ textarea { width: 100%; min-height: 140px; }
 
 .hidden { display: none !important; }
 
+/* Level 8 - Password Challenge */
+
+/* Level 9 - The Blue Snail Challenge */
+.snail-game-container {
+  background: #000000; /* Black background for Level 9 */
+  padding: 20px;
+  border-radius: 10px;
+}
+
+.progress-bar-container {
+  width: 90%;
+  height: 20px;
+  background-color: #f0f0f0;
+  border-radius: 10px;
+  margin: 10px auto;
+  border: 1px solid #ccc;
+  overflow: hidden;
+}
+
+.progress-bar-fill {
+  height: 100%;
+  width: 0%; /* Initial width */
+  background-color: var(--accent); /* Snail-colored progress */
+  border-radius: 10px;
+  transition: width 0.5s ease-out; /* Smooth transition for progress */
+}
+
+.blue-snail {
+  font-size: 40px; /* Adjust size as needed */
+  position: absolute;
+  bottom: 10px;
+  left: 0%;
+  transform: translateX(-50%); /* Center the snail emoji */
+  transition: left 0.1s linear;
+}
+
+.snail-reactions {
+  position: absolute;
+  top: 20%;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 2em;
+  opacity: 0;
+  transition: opacity 0.3s ease-in-out, transform 0.3s ease-in-out;
+  z-index: 3;
+}
+
+.snail-reactions.show {
+  opacity: 1;
+  transform: translateX(-50%) translateY(-20px);
+}
+
+.snail-text-bubble {
+  position: absolute;
+  top: 10%;
+  left: 50%;
+  transform: translateX(-50%);
+  background-color: rgba(255, 255, 255, 0.9);
+  border: 1px solid #ccc;
+  border-radius: 15px;
+  padding: 8px 15px;
+  font-size: 0.9em;
+  color: #333;
+  opacity: 0;
+  transition: opacity 0.3s ease-in-out;
+  white-space: nowrap;
+  z-index: 3;
+}
+
+.snail-text-bubble.show {
+  opacity: 1;
+}
+
+.snail-actions {
+  position: absolute;
+  bottom: 10px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 15px;
+  z-index: 3;
+}
+
+.snail-action-button {
+  padding: 10px 20px;
+  border: none;
+  border-radius: 8px;
+  font-size: 1em;
+  font-weight: bold;
+  cursor: pointer;
+  transition: background-color 0.3s ease, transform 0.1s ease;
+}
+
+.cheer-button {
+  background-color: #4CAF50; /* Green */
+  color: white;
+}
+
+.cheer-button:hover {
+  background-color: #45a049;
+  transform: translateY(-2px);
+}
+
+.boo-button {
+  background-color: #f44336; /* Red */
+  color: white;
+}
+
+.boo-button:hover {
+  background-color: #da190b;
+  transform: translateY(-2px);
+}
+
+/* Level 10 - Confused Snake */
+.snake-game-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  margin: 20px auto;
+  border: 2px solid var(--muted);
+  border-radius: 12px;
+  background: #0e1730;
+  padding: 20px;
+  box-shadow: 0 5px 15px rgba(0,0,0,0.5);
+}
+
+#snakeCanvas {
+  background-color: #000;
+  border: 2px solid var(--accent);
+  border-radius: 8px;
+}
+
+.score-display,
+.control-display {
+  margin-top: 15px;
+  font-size: 1.2em;
+  color: var(--text);
+  font-weight: bold;
+}
+
+#currentControls {
+  color: var(--danger);
+  animation: control-swap-glow 1s infinite alternate;
+}
+
+@keyframes control-swap-glow {
+  from { text-shadow: 0 0 5px var(--danger); }
+  to { text-shadow: 0 0 15px var(--accent); }
+}
+
 

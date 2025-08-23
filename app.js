@@ -748,7 +748,7 @@ const Challenges = {
       // Handle button clicks
       button.addEventListener('click', () => {
         if (isBroken) return;
-
+        
         clicks++;
         updateProgress();
 
@@ -770,7 +770,7 @@ const Challenges = {
         if (clicks >= 20) {
           // Ensure the level completes after 20 clicks, regardless of shattering
           if (!isBroken) {
-            onComplete(); 
+            onComplete();
             showPopup('Button endured the clicks!');
           }
         }
@@ -935,7 +935,7 @@ const Challenges = {
         for (const move of easyMoves) {
           if (emptyCells.includes(move)) {
             makeMove(move, 'O'); // AI makes its move
-            return;
+              return;
           }
         }
 
@@ -968,7 +968,7 @@ const Challenges = {
             
             // Fire success confetti
             fireConfetti();
-
+            
             setTimeout(() => {
               showPopup("Victory! Snails are amazed by your strategy.");
               onComplete();
@@ -1536,7 +1536,7 @@ const Challenges = {
         } else if (fanStrength >= 75) {
           fanStrengthBar.classList.add('high');
           document.body.classList.add('fan-active');
-        } else {
+          } else {
           fanStrengthBar.classList.remove('high');
           document.body.classList.remove('fan-active');
         }
@@ -2549,30 +2549,353 @@ const Challenges = {
       }, 1000);
     }
   },
-  10: {
-    title: 'Find the hidden snail emoji',
-    desc: 'Among the chaos, only the snail is calm.',
+  9: {
+    title: 'The Blue Snail Challenge 🐌',
+    desc: 'A legendary blue snail is in a "race" — but it moves slower than slow motion (like… one pixel per 5 seconds). Players can influence it by cheering or booing, but no matter what they do, the snail will never actually reach the finish line.',
     render(container, onComplete) {
-      const emojis = '😀😅😂🤣😊😍🤩😴😎🤖👻🍕🌮🥑⚽️🏀🚗🚀🦄🐶🐱🐸🐙🦕🌈🔥💧🍀🌻⭐️🌙🎲🎧🎮📀📎📌🔑🧲🧪🧠🧱🧨🥇🥈🥉🍭🍩🍪🍰🧁🧋🥤🍺🍷🍸🍹🍾🥂🍽️🍴🥢🧂🧃🧊🧇🧈🥞🥓🥚🧇🧁🪙🪵🪩🪞🪟🗿🗿🗿🗿'.split('');
-      const grid = document.createElement('div');
-      grid.className = 'grid emoji';
-      const snailIndex = Math.floor(Math.random()*200) + 50;
-      for (let i=0;i<300;i++) {
-        const s = document.createElement('span');
-        s.textContent = i === snailIndex ? '🐌' : emojis[Math.floor(Math.random()*emojis.length)];
-        s.addEventListener('click', () => {
-          if (s.textContent === '🐌') {
-            s.style.filter = 'drop-shadow(0 0 8px #59ffa5)';
-            fakeVerifyFlow('Snail found. Snails approve.').then(onComplete);
-          } else {
-            showPopup('That has insufficient snail vibes.');
-            updatePatience(1);
-          }
+      container.innerHTML = `
+        <div class="snail-game-container">
+          <div class="progress-bar-container">
+            <div class="progress-bar-fill"></div>
+          </div>
+          <div class="blue-snail">🐌</div>
+          <div class="snail-reactions"></div>
+          <div class="snail-text-bubble"></div>
+          <div class="snail-actions">
+            <button class="snail-action-button cheer-button">🟢 Cheer</button>
+            <button class="snail-action-button boo-button">🔴 Boo</button>
+          </div>
+        </div>
+      `;
+
+      const snailElem = container.querySelector(".blue-snail");
+      const progressBarFill = container.querySelector(".progress-bar-fill");
+      const cheerButton = container.querySelector(".cheer-button");
+      const booButton = container.querySelector(".boo-button");
+      const snailReactions = container.querySelector(".snail-reactions");
+      const snailTextBubble = container.querySelector(".snail-text-bubble");
+
+      let snailPosition = 0; // in percentage
+      let snailSpeed = 0.005; // pixels per frame (very slow)
+      let snailDirection = 1; // 1 for forward, -1 for backward
+      let cheerBooEffect = 0; // temporary speed modifier from cheer/boo
+      const maxSnailProgress = 5; // Snail never reaches 100%
+
+      let animationFrameId;
+      let lastTime = null;
+
+      const showReaction = (emoji) => {
+        snailReactions.textContent = emoji;
+        snailReactions.classList.add("show");
+        setTimeout(() => {
+          snailReactions.classList.remove("show");
+        }, 1000);
+      };
+
+      const showTextBubble = (message) => {
+        snailTextBubble.textContent = message;
+        snailTextBubble.classList.add("show");
+        setTimeout(() => {
+          snailTextBubble.classList.remove("show");
+        }, 3000);
+      };
+
+      cheerButton.addEventListener("click", () => {
+        cheerBooEffect += 0.001; // Small speed boost
+        snailDirection = 1;
+        showReaction("Yay! 🎉");
+        showTextBubble("I feel a burst of energy! (for now)");
+        cheerBooCount++;
+      });
+
+      booButton.addEventListener("click", () => {
+        cheerBooEffect -= 0.002; // Slow down more dramatically
+        if (snailPosition > 0) {
+          snailDirection = -1;
+        }
+        showReaction("Booo! 💨");
+        showTextBubble("Why are you so mean?! 😢");
+        cheerBooCount++;
+      });
+
+      const updateSnail = (time) => {
+        if (!lastTime) lastTime = time;
+        const deltaTime = time - lastTime;
+        lastTime = time;
+
+        // Apply cheer/boo effect temporarily
+        snailPosition += (snailSpeed * snailDirection + cheerBooEffect) * deltaTime;
+        cheerBooEffect *= 0.9; // Decay the effect
+
+        // Keep snail within bounds (0 to maxSnailProgress)
+        snailPosition = Math.max(0, Math.min(maxSnailProgress, snailPosition));
+
+        // Update snail and progress bar visuals
+        snailElem.style.left = `${(snailPosition / maxSnailProgress) * 90}%`; // Snail moves within 0-90% of container
+        progressBarFill.style.width = `${snailPosition}%`;
+
+        // Loop animation
+        animationFrameId = requestAnimationFrame(updateSnail);
+      };
+
+      requestAnimationFrame(updateSnail);
+
+      // Random events
+      const randomEvents = [
+        { type: "pebble", message: "A pebble! This will take 5 minutes to climb... 🪨", effect: (originalSpeed) => { snailSpeed = 0.0001; showTextBubble("Pebble detected... must re-route."); setTimeout(() => snailSpeed = originalSpeed, 5000); } },
+        { type: "leaf", message: "Ooh, a pretty leaf! *distracted* 🍂", effect: () => { showTextBubble("Why run when you can vibe?"); } },
+        { type: "puddle", message: "A puddle?! My arch-nemesis! 💧", effect: (originalSpeed) => { snailDirection = -1; showTextBubble("Can't cross this! Reversing..."); setTimeout(() => snailDirection = 1, 2000); } },
+        { type: "nap", message: "Zzzzz... just a quick nap. 😴", effect: (originalSpeed) => { const napTime = Math.random() * 5000 + 1000; snailSpeed = 0; showTextBubble("Snail is tired, please wait..."); setTimeout(() => snailSpeed = originalSpeed, napTime); } }
+      ];
+
+      let eventInterval;
+      const originalSnailSpeed = snailSpeed;
+
+      const triggerRandomEvent = () => {
+        const randomIndex = Math.floor(Math.random() * randomEvents.length);
+        const event = randomEvents[randomIndex];
+        showReaction(event.message.split(' ')[0] + " " + event.message.split(' ')[event.message.split(' ').length - 1]); // Show emoji as reaction
+        event.effect(originalSnailSpeed);
+      };
+
+      // Trigger a random event every 10-20 seconds
+      eventInterval = setInterval(triggerRandomEvent, Math.random() * 10000 + 10000);
+
+      // Player trolling popups
+      const trollingMessages = [
+        "Snail is tired, please wait...",
+        "Snail is questioning life choices...",
+        "You think you can rush me? I'm a snail!",
+        "Error 404: Motivation not found. For the snail.",
+        "Just enjoying the view. Be back in a century."
+      ];
+
+      let trollingInterval;
+
+      const showTrollingPopup = () => {
+        const randomIndex = Math.floor(Math.random() * trollingMessages.length);
+        showPopup(trollingMessages[randomIndex]);
+      };
+
+      // Trigger a trolling popup every 20-40 seconds
+      trollingInterval = setInterval(showTrollingPopup, Math.random() * 20000 + 20000);
+
+      // Meta Ending Logic
+      let startTime = Date.now();
+      let cheerBooCount = 0;
+
+      cheerButton.addEventListener("click", () => {
+        cheerBooEffect += 0.001; // Small speed boost
+        snailDirection = 1;
+        showReaction("Yay! 🎉");
+        showTextBubble("I feel a burst of energy! (for now)");
+        cheerBooCount++;
+      });
+
+      booButton.addEventListener("click", () => {
+        cheerBooEffect -= 0.002; // Slow down more dramatically
+        if (snailPosition > 0) {
+          snailDirection = -1;
+        }
+        showReaction("Booo! 💨");
+        showTextBubble("Why are you so mean?! 😢");
+        cheerBooCount++;
+      });
+
+      const checkMetaEnding = () => {
+        const timeElapsed = (Date.now() - startTime) / 1000; // in seconds
+
+        if (timeElapsed >= 300 && snailPosition < maxSnailProgress) { // 5 minutes
+          showPopup({
+            title: "🏆 Patience Award",
+            message: "You've waited patiently for the snail to move. Here's an award for your incredible virtue!\n\nCongrats! The snail is still moving… come back tomorrow."
+          });
+          onComplete(); // Complete the level after the award
+        } else if (cheerBooCount >= 100) {
+          showPopup({
+            title: "😂 Snail Whisperer",
+            message: "You've spammed the snail with cheers and boos! You truly understand the snail's motivation (or lack thereof).\n\nCongrats! The snail is still moving… come back tomorrow."
+          });
+          onComplete(); // Complete the level after the award
+        }
+      };
+
+      // Check for meta ending every 10 seconds
+      setInterval(checkMetaEnding, 10000);
+    }
+  },
+  10: {
+    title: 'Confused Snake 🐍',
+    desc: 'Classic Snake game, but every few seconds the controls randomly swap. Left suddenly becomes Up, Right becomes Down, etc.',
+    render(container, onComplete) {
+      container.innerHTML = `
+        <div class="center">
+          <h3 class="challenge-title">Level 10</h3>
+          <p class="challenge-desc">Classic Snake game, but every few seconds the controls randomly swap. Left suddenly becomes Up, Right becomes Down, etc.</p>
+          <div class="snake-game-container">
+            <canvas id="snakeCanvas" width="400" height="400"></canvas>
+            <div class="score-display">Score: <span id="snakeScore">0</span></div>
+            <div class="control-display">Current Controls: <span id="currentControls">UP, DOWN, LEFT, RIGHT</span></div>
+            <button id="snakeRestartBtn" class="primary" style="margin-top: 15px;">Restart Game</button>
+          </div>
+        </div>
+      `;
+      // JavaScript logic for Level 10 will go here
+
+      const canvas = container.querySelector("#snakeCanvas");
+      const ctx = canvas.getContext("2d");
+      const scoreDisplay = container.querySelector("#snakeScore");
+      const controlDisplay = container.querySelector("#currentControls");
+      const restartBtn = container.querySelector("#snakeRestartBtn");
+
+      const GRID_SIZE = 20;
+      const CANVAS_SIZE = 400;
+      let snake = [
+        { x: 10, y: 10 },
+        { x: 9, y: 10 },
+        { x: 8, y: 10 },
+      ];
+      let food = {};
+      let direction = { x: 1, y: 0 }; // Initial direction: right
+      let score = 0;
+      let gameOver = false;
+      let gameInterval;
+      let currentControlMap = {};
+      const originalControlMap = {
+        "ArrowUp": { x: 0, y: -1 },
+        "ArrowDown": { x: 0, y: 1 },
+        "ArrowLeft": { x: -1, y: 0 },
+        "ArrowRight": { x: 1, y: 0 },
+      };
+
+      const controlOptions = [
+        { label: "UP, DOWN, LEFT, RIGHT", map: { "ArrowUp": { x: 0, y: -1 }, "ArrowDown": { x: 0, y: 1 }, "ArrowLeft": { x: -1, y: 0 }, "ArrowRight": { x: 1, y: 0 } } },
+        { label: "DOWN, UP, RIGHT, LEFT", map: { "ArrowUp": { x: 0, y: 1 }, "ArrowDown": { x: 0, y: -1 }, "ArrowLeft": { x: 1, y: 0 }, "ArrowRight": { x: -1, y: 0 } } },
+        { label: "LEFT, RIGHT, DOWN, UP", map: { "ArrowUp": { x: -1, y: 0 }, "ArrowDown": { x: 1, y: 0 }, "ArrowLeft": { x: 0, y: 1 }, "ArrowRight": { x: 0, y: -1 } } },
+        { label: "RIGHT, LEFT, UP, DOWN", map: { "ArrowUp": { x: 1, y: 0 }, "ArrowDown": { x: -1, y: 0 }, "ArrowLeft": { x: 0, y: -1 }, "ArrowRight": { x: 0, y: 1 } } },
+      ];
+
+      function draw() {
+        ctx.clearRect(0, 0, CANVAS_SIZE, CANVAS_SIZE);
+
+        // Draw snake
+        ctx.fillStyle = "lime";
+        snake.forEach(segment => {
+          ctx.fillRect(segment.x * GRID_SIZE, segment.y * GRID_SIZE, GRID_SIZE, GRID_SIZE);
+          ctx.strokeStyle = "#003300";
+          ctx.strokeRect(segment.x * GRID_SIZE, segment.y * GRID_SIZE, GRID_SIZE, GRID_SIZE);
         });
-        grid.appendChild(s);
+
+        // Draw food
+        ctx.fillStyle = "red";
+        ctx.fillRect(food.x * GRID_SIZE, food.y * GRID_SIZE, GRID_SIZE, GRID_SIZE);
       }
-      container.innerHTML = `<h3 class="challenge-title">Level 10</h3><p class="challenge-desc">Find the hidden snail among impostors.</p>`;
-      container.appendChild(grid);
+
+      function generateFood() {
+        let newFoodPos;
+        do {
+          newFoodPos = {
+            x: Math.floor(Math.random() * (CANVAS_SIZE / GRID_SIZE)),
+            y: Math.floor(Math.random() * (CANVAS_SIZE / GRID_SIZE)),
+          };
+        } while (snake.some(segment => segment.x === newFoodPos.x && segment.y === newFoodPos.y));
+        food = newFoodPos;
+      }
+
+      function changeDirection(event) {
+        if (gameOver) return;
+
+        const newDirection = currentControlMap[event.key];
+        if (newDirection) {
+          // Prevent reversing directly into itself
+          const head = snake[0];
+          const nextX = head.x + newDirection.x;
+          const nextY = head.y + newDirection.y;
+          if (!(nextX === snake[1].x && nextY === snake[1].y)) {
+            direction = newDirection;
+          }
+        }
+      }
+
+      function checkCollision() {
+        const head = snake[0];
+
+        // Wall collision
+        if (
+          head.x < 0 ||
+          head.x >= CANVAS_SIZE / GRID_SIZE ||
+          head.y < 0 ||
+          head.y >= CANVAS_SIZE / GRID_SIZE
+        ) {
+          return true;
+        }
+
+        // Self-collision
+        for (let i = 1; i < snake.length; i++) {
+          if (head.x === snake[i].x && head.y === snake[i].y) {
+            return true;
+          }
+        }
+
+        return false;
+      }
+
+      function gameLoop() {
+        if (gameOver) return;
+
+        const head = { x: snake[0].x + direction.x, y: snake[0].y + direction.y };
+        snake.unshift(head);
+
+        if (head.x === food.x && head.y === food.y) {
+          score++;
+          scoreDisplay.textContent = score;
+          generateFood();
+        } else {
+          snake.pop();
+        }
+
+        if (checkCollision()) {
+          gameOver = true;
+          clearInterval(gameInterval);
+          showPopup(`Game Over! Your score: ${score}`);
+          onComplete(); // Complete the level even on game over
+        } else {
+          draw();
+        }
+      }
+
+      function startGame() {
+        snake = [
+          { x: 10, y: 10 },
+          { x: 9, y: 10 },
+          { x: 8, y: 10 },
+        ];
+        direction = { x: 1, y: 0 };
+        score = 0;
+        gameOver = false;
+        scoreDisplay.textContent = score;
+        generateFood();
+        assignRandomControls(); // Initial random controls
+
+        if (gameInterval) clearInterval(gameInterval);
+        gameInterval = setInterval(gameLoop, 150); // Game speed
+      }
+
+      function assignRandomControls() {
+        const randomIndex = Math.floor(Math.random() * controlOptions.length);
+        const selectedControls = controlOptions[randomIndex];
+        currentControlMap = selectedControls.map;
+        controlDisplay.textContent = selectedControls.label;
+      }
+
+      restartBtn.addEventListener("click", startGame);
+      document.addEventListener("keydown", changeDirection);
+
+      // Initial start
+      startGame();
+
+      // Control swapping interval
+      setInterval(assignRandomControls, 5000); // Swap controls every 5 seconds
     }
   },
   15: {
