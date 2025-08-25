@@ -31,3 +31,5 @@ Open `index.html` in a modern browser. No build step needed.
 - Everything runs locally, no servers, no tracking, no storage.
 
 
+Video link - https://drive.google.com/file/d/1ooiYhZr13XO5IHw9K74ZgtqakAzEZJrO/view?usp=sharing
+
