@@ -250,152 +250,244 @@ const Challenges = {
     }
   },
   2: {
-    title: 'Type the Twisted Sentence',
-    desc: 'Type the target sentence, but each key maps to a different letter.',
+    title: 'Keyboard of Eternal Slime',
+    desc: 'Type words with a real keyboard that gets sabotaged by snail slime every 3 seconds.',
     render(container, onComplete) {
       container.innerHTML = `
         <div class="center">
           <h3 class="challenge-title">Level 2</h3>
-          <p class="challenge-desc">Type the target sentence below. But beware - each key you press maps to a different letter!</p>
+          <p class="challenge-desc">Welcome to Level 2: Keyboard of Eternal Slime. Type the word shown using your real keyboard. Sounds simple… until the snail slime kicks in!</p>
           
           <div class="target-section" style="margin: 20px 0; padding: 16px; background: #0e1730; border-radius: 12px; border: 1px solid #2a3550;">
-            <h4 style="margin: 0 0 8px 0; color: var(--accent);">Target Sentence:</h4>
-            <div id="target-text" style="font-size: 18px; line-height: 1.4; color: var(--text);">The quick brown fox jumps over the lazy snail.</div>
+            <h4 style="margin: 0 0 8px 0; color: var(--accent);">Target Word:</h4>
+            <div id="target-word" style="font-size: 24px; line-height: 1.4; color: var(--text); font-weight: 600; text-align: center;">slime</div>
           </div>
           
           <div class="input-section" style="margin: 20px 0;">
-            <label for="twisted-input" style="display: block; margin-bottom: 8px; color: var(--muted);">Type here:</label>
-            <input id="twisted-input" class="input" type="text" placeholder="Start typing..." style="font-size: 16px; width: 100%; max-width: 500px;" />
-            <div id="mapped-display" style="margin-top: 12px; padding: 12px; background: #0a0f1a; border-radius: 8px; border: 1px solid #1f2a44; min-height: 20px; color: var(--muted); font-family: monospace;">
-              <span style="color: var(--muted);">Mapped output: </span><span id="mapped-text"></span>
-            </div>
+            <label for="slime-input" style="display: block; margin-bottom: 8px; color: var(--muted);">Type here (if you dare):</label>
+            <input id="slime-input" class="input" type="text" placeholder="Start typing..." style="font-size: 18px; width: 100%; max-width: 500px; padding: 12px; background: #0a0f1a; border: 2px solid #2a3550; border-radius: 8px; color: var(--text);" />
+            <div id="slime-status" style="margin-top: 12px; padding: 8px; background: #0a0f1a; border-radius: 6px; border: 1px solid #1f2a44; min-height: 20px; color: var(--muted); font-size: 14px; text-align: center;"></div>
           </div>
           
-          <div class="progress-section" style="margin: 20px 0;">
-            <div style="margin-bottom: 8px; color: var(--muted);">Progress: <span id="progress-text">0%</span></div>
+          <div class="stats-section" style="margin: 20px 0; text-align: center;">
+            <div style="margin-bottom: 8px; color: var(--muted);">Words Completed: <span id="words-completed">0</span>/3</div>
+            <div style="margin-bottom: 8px; color: var(--muted);">Time until slime: <span id="slime-timer">3</span>s</div>
             <div class="progress">
               <div id="level2-progress" style="width: 0%"></div>
             </div>
           </div>
           
-          <div id="level2-status" style="margin-top: 16px; font-weight: 600;"></div>
+          <div id="level2-status" style="margin-top: 16px; font-weight: 600; text-align: center;"></div>
         </div>
       `;
       
-      const input = $('#twisted-input');
-      const mappedText = $('#mapped-text');
-      const progressText = $('#progress-text');
+      const targetWord = $('#target-word');
+      const input = $('#slime-input');
+      const slimeStatus = $('#slime-status');
+      const wordsCompleted = $('#words-completed');
+      const slimeTimer = $('#slime-timer');
       const progressBar = $('#level2-progress');
       const status = $('#level2-status');
       
-      let isCorrect = false;
-
-      const charMap = 'abcdefghijklmnopqrstuvwxyz';
-      let twistedMap = {};
+      let currentWord = '';
+      let currentTyped = '';
+      let completedWords = 0;
+      let slimeCountdown = 3;
+      let slimeInterval;
+      let backspaceCount = 0;
+      let spacebarHits = 0;
+      let chaosMode = false;
       
-      // Generate a random twisted map
-      function generateTwistedMap() {
-        const shuffledChars = charMap.split('').sort(() => 0.5 - Math.random());
-        for (let i = 0; i < charMap.length; i++) {
-          twistedMap[charMap[i]] = shuffledChars[i];
-        }
-      }
-
-      generateTwistedMap(); // Generate map on render
+      const words = ['slime', 'snailord', 'lettuceking', 'ragequit', 'slimeoverlord', 'snailmaster'];
       
-      // Letter mapping (simple substitution cipher)
-      const letterMap = {
-        'a': 'q', 'b': 'w', 'c': 'e', 'd': 'r', 'e': 't', 'f': 'y', 'g': 'u', 'h': 'i',
-        'i': 'o', 'j': 'p', 'k': 'a', 'l': 's', 'm': 'd', 'n': 'f', 'o': 'g', 'p': 'h',
-        'q': 'j', 'r': 'k', 's': 'l', 't': 'z', 'u': 'x', 'v': 'c', 'w': 'v', 'x': 'b',
-        'y': 'n', 'z': 'm', ' ': ' ', '.': '.', ',': ',', '!': '!', '?': '?'
-      };
+      // Keyboard sabotage maps
+      let keySwapMap = {};
+      let slimedKeys = new Set();
+      let spacebarBroken = false;
       
-      // Reverse mapping for decoding
-      const reverseMap = {};
-      Object.keys(letterMap).forEach(key => {
-        reverseMap[letterMap[key]] = key;
-      });
-      
-      const targetSentence = "The quick brown fox jumps over the lazy snail.";
-      let currentTyped = "";
-      let mappedOutput = "";
-      
-      // Update progress
-      function updateProgress() {
-        const progress = Math.min((currentTyped.length / targetSentence.length) * 100, 100);
-        progressText.textContent = `${Math.round(progress)}%`;
-        progressBar.style.width = `${progress}%`;
+      function getRandomWord() {
+        return words[Math.floor(Math.random() * words.length)];
       }
       
-      // Check completion
-      function checkCompletion() {
-        if (currentTyped === targetSentence) {
-          status.textContent = "🎉 Level Cleared! Perfect typing!";
-          status.style.color = "var(--ok)";
-          input.disabled = true;
-          input.style.background = "#0a1a0a";
-          input.style.borderColor = "var(--ok)";
-          
-          // Add some visual flair
-          setTimeout(() => {
-            showPopup("Twisted typing mastered! Snails approve.");
-            onComplete();
-          }, 1500);
-        }
-      }
-      
-      // Handle input
-      input.addEventListener('input', () => {
-        const rawText = input.value.toLowerCase();
-        let mappedOutput = '';
-        let currentProgress = 0;
-
-        for (let i = 0; i < rawText.length; i++) {
-          const char = rawText[i];
-          if (char in twistedMap) {
-            mappedOutput += twistedMap[char];
-          } else {
-            mappedOutput += char; // Keep non-alphabet characters as is
-          }
-        }
-        
-        mappedText.textContent = mappedOutput;
-        
-        // Check against target text
-        const targetLen = targetSentence.length;
-        const currentMappedLen = mappedOutput.length;
-        
-        if (mappedOutput === targetSentence.substring(0, currentMappedLen)) {
-          // Correct input, update progress
-          currentProgress = (currentMappedLen / targetLen) * 100;
-          progressBar.style.width = `${currentProgress}%`;
-          progressText.textContent = `${Math.floor(currentProgress)}%`;
-
-          if (mappedOutput === targetSentence) {
-            // Level complete
-            isCorrect = true;
-            status.textContent = "🎉 Level Cleared!";
-            status.style.color = "var(--ok)";
-            showPopup("Twisted typing mastered! Snails approve.");
-            onComplete();
-            input.disabled = true; // Disable input after completion
-          }
+      function updateSlimeStatus() {
+        if (chaosMode) {
+          slimeStatus.textContent = "🐌 CHAOS MODE: Every letter = 🐌 🐌 🐌";
+          slimeStatus.style.color = "var(--danger)";
         } else {
-          // Incorrect input, reset progress and display error
-          status.textContent = "🚫 Incorrect sequence. Try again!";
-          status.style.color = "var(--danger)";
-          // Optionally reset input or just show error for now
+          const slimedCount = slimedKeys.size;
+          const swappedCount = Object.keys(keySwapMap).length;
+          slimeStatus.textContent = `Slimed keys: ${slimedCount} | Swapped keys: ${swappedCount} | Spacebar: ${spacebarBroken ? 'BROKEN' : 'Working'}`;
+          slimeStatus.style.color = "var(--muted)";
+        }
+      }
+      
+      function sabotageKeyboard() {
+        // Reset sabotage
+        keySwapMap = {};
+        slimedKeys.clear();
+        spacebarBroken = false;
+        
+        // Random key swaps (2-5 keys)
+        const swapCount = Math.floor(Math.random() * 4) + 2;
+        const allKeys = 'abcdefghijklmnopqrstuvwxyz'.split('');
+        
+        for (let i = 0; i < swapCount; i++) {
+          const key1 = allKeys[Math.floor(Math.random() * allKeys.length)];
+          const key2 = allKeys[Math.floor(Math.random() * allKeys.length)];
+          if (key1 !== key2) {
+            keySwapMap[key1] = key2;
+            keySwapMap[key2] = key1;
+          }
+        }
+        
+        // Random slimed keys (1-3 keys)
+        const slimeCount = Math.floor(Math.random() * 3) + 1;
+        for (let i = 0; i < slimeCount; i++) {
+          const randomKey = allKeys[Math.floor(Math.random() * allKeys.length)];
+          slimedKeys.add(randomKey);
+        }
+        
+        // Sometimes break spacebar
+        if (Math.random() < 0.4) {
+          spacebarBroken = true;
+        }
+        
+        // Check for chaos mode
+        if (Object.keys(keySwapMap).length >= 20 || slimedKeys.size >= 10) {
+          chaosMode = true;
+        }
+        
+        updateSlimeStatus();
+        showPopup("🐌 Snail slime has corrupted your keyboard!");
+        updatePatience(2);
+      }
+      
+      function startSlimeTimer() {
+        slimeCountdown = 3;
+        slimeInterval = setInterval(() => {
+          slimeCountdown--;
+          slimeTimer.textContent = slimeCountdown;
+          
+          if (slimeCountdown <= 0) {
+            sabotageKeyboard();
+            startSlimeTimer();
+          }
+        }, 1000);
+      }
+      
+      function processInput(inputChar) {
+        let processedChar = inputChar;
+        
+        if (chaosMode) {
+          return '🐌';
+        }
+        
+        // Check for key swaps
+        if (keySwapMap[inputChar]) {
+          processedChar = keySwapMap[inputChar];
+        }
+        
+        // Check for slimed keys
+        if (slimedKeys.has(inputChar)) {
+          processedChar = 'ssssss';
+        }
+        
+        return processedChar;
+      }
+      
+      function handleInput(e) {
+        const inputValue = e.target.value;
+        const lastChar = inputValue[inputValue.length - 1];
+        
+        if (e.inputType === 'deleteContentBackward') {
+          backspaceCount++;
+          if (backspaceCount > 5) {
+            showPopup("Humans fear commitment. Snails never delete 🐌");
+            updatePatience(2);
+          }
+          return;
+        }
+        
+        if (lastChar === ' ') {
+          if (spacebarBroken) {
+            spacebarHits++;
+            if (spacebarHits < 3) {
+              showPopup(`Spacebar needs ${3 - spacebarHits} more hits!`);
+              e.target.value = inputValue.slice(0, -1); // Remove the space
+              return;
+            } else {
+              spacebarHits = 0;
+              spacebarBroken = false;
+              showPopup("Spacebar fixed! For now...");
+            }
+          }
+        }
+        
+        // Process the input with sabotage
+        const processedChar = processInput(lastChar);
+        
+        if (processedChar !== lastChar) {
+          // Replace the last character with processed version
+          e.target.value = inputValue.slice(0, -1) + processedChar;
+        }
+        
+        currentTyped = e.target.value;
+        
+        // Check for word completion
+        if (currentTyped === currentWord) {
+          // Word completed!
+          completedWords++;
+          wordsCompleted.textContent = completedWords;
+          progressBar.style.width = `${(completedWords / 3) * 100}%`;
+          
+          if (completedWords >= 3) {
+            // Level complete!
+            status.textContent = "🎉 Level Cleared! You survived the slime!";
+            status.style.color = "var(--ok)";
+            showPopup("Barely acceptable. Snail still faster 🐌");
+            fireConfetti();
+            setTimeout(() => onComplete(), 2000);
+            return;
+          }
+          
+          // Start new word
+          currentWord = getRandomWord();
+          currentTyped = '';
+          targetWord.textContent = currentWord;
+          e.target.value = '';
+          showPopup("Word completed! But the slime is getting worse...");
+        } else if (currentTyped.length >= currentWord.length) {
+          // Word is wrong
+          showPopup("Your typing speed = dial-up internet 🐌");
+          updatePatience(3);
+        }
+      }
+      
+      // Initialize
+      currentWord = getRandomWord();
+      targetWord.textContent = currentWord;
+      startSlimeTimer();
+      sabotageKeyboard(); // Initial sabotage
+      
+      // Event listeners
+      input.addEventListener('input', handleInput);
+      input.addEventListener('keydown', (e) => {
+        if (e.key === 'Backspace') {
+          backspaceCount++;
+          if (backspaceCount > 5) {
+            showPopup("Humans fear commitment. Snails never delete 🐌");
+            updatePatience(2);
+          }
         }
       });
       
       // Focus input on start
       setTimeout(() => input.focus(), 100);
       
-      // Add some visual feedback for the twisted nature
+      // Add CSS animations
       const style = document.createElement('style');
       style.textContent = `
-        #twisted-input:focus {
+        #slime-input:focus {
           border-color: var(--accent);
           box-shadow: 0 0 0 2px #5aa7ff33;
         }
@@ -406,8 +498,21 @@ const Challenges = {
           from { box-shadow: 0 0 5px #2a3550; }
           to { box-shadow: 0 0 15px #5aa7ff66; }
         }
+        @keyframes slime {
+          0% { transform: scale(1); }
+          50% { transform: scale(1.05); }
+          100% { transform: scale(1); }
+        }
+        .slime-mode {
+          animation: slime 0.5s ease-in-out infinite;
+        }
       `;
       document.head.appendChild(style);
+      
+      // Cleanup function
+      return () => {
+        if (slimeInterval) clearInterval(slimeInterval);
+      };
     }
   },
   3: {
@@ -474,15 +579,17 @@ const Challenges = {
         }
         
         .glass-button:hover {
-          transform: translateY(-2px);
+          transform: translateY(-3px) scale(1.02);
           box-shadow: 
-            0 12px 40px rgba(0, 0, 0, 0.4),
-            inset 0 1px 0 rgba(255, 255, 255, 0.3),
+            0 15px 50px rgba(0, 0, 0, 0.5),
+            inset 0 1px 0 rgba(255, 255, 255, 0.4),
             inset 0 -1px 0 rgba(0, 0, 0, 0.1);
+          filter: brightness(1.1);
         }
         
         .glass-button:active {
-          transform: translateY(0);
+          transform: translateY(-1px) scale(0.98);
+          transition: all 0.1s ease;
         }
         
         .glass-content {
@@ -528,10 +635,12 @@ const Challenges = {
           right: 0;
           bottom: 0;
           background: 
-            radial-gradient(circle at 50% 50%, transparent 20%, rgba(255, 0, 0, 0.2) 22%, transparent 25%),
-            linear-gradient(45deg, transparent 48%, rgba(255, 0, 0, 0.2) 50%, transparent 52%);
+            radial-gradient(circle at 50% 50%, transparent 20%, rgba(255, 0, 0, 0.3) 22%, transparent 25%),
+            linear-gradient(45deg, transparent 48%, rgba(255, 0, 0, 0.3) 50%, transparent 52%),
+            linear-gradient(-45deg, transparent 48%, rgba(255, 0, 0, 0.2) 50%, transparent 52%);
           pointer-events: none;
-          animation: crack-in 0.5s ease-out forwards;
+          animation: crack-in 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
+          filter: drop-shadow(0 0 8px rgba(255, 0, 0, 0.4));
         }
 
         .glass-button.crack-two::before {
@@ -542,17 +651,32 @@ const Challenges = {
           right: 0;
           bottom: 0;
           background: 
-            radial-gradient(circle at 50% 50%, transparent 15%, rgba(255, 0, 0, 0.3) 17%, transparent 20%),
-            linear-gradient(45deg, transparent 45%, rgba(255, 0, 0, 0.3) 48%, transparent 52%),
-            linear-gradient(-45deg, transparent 45%, rgba(255, 0, 0, 0.3) 48%, transparent 52%),
-            linear-gradient(90deg, transparent 48%, rgba(255, 0, 0, 0.3) 50%, transparent 52%);
+            radial-gradient(circle at 50% 50%, transparent 15%, rgba(255, 0, 0, 0.4) 17%, transparent 20%),
+            linear-gradient(45deg, transparent 45%, rgba(255, 0, 0, 0.4) 48%, transparent 52%),
+            linear-gradient(-45deg, transparent 45%, rgba(255, 0, 0, 0.4) 48%, transparent 52%),
+            linear-gradient(90deg, transparent 48%, rgba(255, 0, 0, 0.4) 50%, transparent 52%),
+            linear-gradient(135deg, transparent 45%, rgba(255, 0, 0, 0.3) 48%, transparent 52%);
           pointer-events: none;
-          animation: crack-in 0.5s ease-out forwards;
+          animation: crack-in 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
+          filter: drop-shadow(0 0 12px rgba(255, 0, 0, 0.6));
         }
 
         @keyframes crack-in {
-          0% { opacity: 0; transform: scale(0.8); }
-          100% { opacity: 1; transform: scale(1); }
+          0% { 
+            opacity: 0; 
+            transform: scale(0.6) rotate(-5deg); 
+            filter: brightness(0.5);
+          }
+          50% { 
+            opacity: 0.8; 
+            transform: scale(1.1) rotate(2deg); 
+            filter: brightness(1.2);
+          }
+          100% { 
+            opacity: 1; 
+            transform: scale(1) rotate(0deg); 
+            filter: brightness(1);
+          }
         }
         
         .glass-button.shattered {
@@ -562,14 +686,36 @@ const Challenges = {
         }
         
         @keyframes shatter {
-          0% { transform: scale(1) rotate(0deg); opacity: 1; }
-          25% { transform: scale(1.1) rotate(5deg); box-shadow: 0 0 40px rgba(255, 0, 0, 0.8); }
-          50% { transform: scale(0.8) rotate(-10deg); opacity: 0.8; }
-          75% { transform: scale(0.6) rotate(15deg); opacity: 0.5; }
+          0% { 
+            transform: scale(1) rotate(0deg); 
+            opacity: 1;
+            filter: brightness(1) blur(0px);
+          }
+          15% { 
+            transform: scale(1.15) rotate(8deg); 
+            box-shadow: 0 0 50px rgba(255, 0, 0, 0.9);
+            filter: brightness(1.3) blur(1px);
+          }
+          35% { 
+            transform: scale(0.9) rotate(-12deg); 
+            opacity: 0.9;
+            filter: brightness(1.1) blur(2px);
+          }
+          60% { 
+            transform: scale(0.7) rotate(18deg); 
+            opacity: 0.6;
+            filter: brightness(0.8) blur(3px);
+          }
+          85% { 
+            transform: scale(0.3) rotate(-25deg); 
+            opacity: 0.3;
+            filter: brightness(0.6) blur(4px);
+          }
           100% { 
             transform: scale(0) rotate(45deg);
             opacity: 0;
             box-shadow: 0 0 0 transparent;
+            filter: brightness(0.4) blur(5px);
           }
         }
         
@@ -582,38 +728,83 @@ const Challenges = {
         
         .glass-piece {
           position: absolute;
-          width: 30px; /* Larger pieces */
-          height: 30px;
-          background: rgba(255, 255, 255, 0.15); /* Slightly more visible */
-          border-radius: 6px; /* Slightly larger border radius */
-          animation: piece-fly 1s ease-out forwards;
+          width: 24px; /* Slightly smaller for better distribution */
+          height: 24px;
+          background: linear-gradient(135deg, rgba(255, 255, 255, 0.2), rgba(255, 255, 255, 0.1));
+          border-radius: 4px;
+          border: 1px solid rgba(255, 255, 255, 0.3);
+          animation: piece-fly 1.5s ease-out forwards;
+          animation-delay: var(--delay);
+          box-shadow: 0 0 8px rgba(255, 255, 255, 0.3);
         }
         
         @keyframes piece-fly {
-          0% { transform: translate(0, 0) rotate(0deg); opacity: 1; }
+          0% { 
+            transform: translate(0, 0) rotate(0deg) scale(1); 
+            opacity: 1;
+            filter: brightness(1);
+          }
+          20% {
+            transform: translate(calc(var(--fly-x) * 0.2), calc(var(--fly-y) * 0.2)) rotate(calc(var(--fly-rot) * 0.2)) scale(1.1);
+            opacity: 1;
+            filter: brightness(1.2);
+          }
+          60% {
+            transform: translate(calc(var(--fly-x) * 0.6), calc(var(--fly-y) * 0.6)) rotate(calc(var(--fly-rot) * 0.6)) scale(0.9);
+            opacity: 0.8;
+            filter: brightness(0.8);
+          }
           100% { 
-            transform: translate(var(--fly-x), var(--fly-y)) rotate(var(--fly-rot));
+            transform: translate(var(--fly-x), var(--fly-y)) rotate(var(--fly-rot)) scale(0.5);
             opacity: 0;
+            filter: brightness(0.5);
           }
         }
 
         .shatter-burst {
           position: absolute;
-          width: 150px; /* Larger burst */
-          height: 150px;
-          background: radial-gradient(circle, rgba(255, 255, 255, 0.8) 0%, rgba(255, 100, 100, 0.5) 70%, transparent 100%);
+          width: 180px; /* Larger burst */
+          height: 180px;
+          background: radial-gradient(circle, 
+            rgba(255, 255, 255, 0.9) 0%, 
+            rgba(255, 200, 200, 0.7) 30%, 
+            rgba(255, 100, 100, 0.5) 60%, 
+            rgba(255, 50, 50, 0.3) 80%, 
+            transparent 100%);
           border-radius: 50%;
           transform: translate(-50%, -50%) scale(0); /* Start small */
-          animation: burst-out 0.5s ease-out forwards;
+          animation: burst-out 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
           pointer-events: none;
           z-index: 99;
           top: 50%;
           left: 50%;
+          box-shadow: 
+            0 0 40px rgba(255, 255, 255, 0.6),
+            0 0 80px rgba(255, 100, 100, 0.4),
+            0 0 120px rgba(255, 50, 50, 0.2);
         }
 
         @keyframes burst-out {
-          0% { transform: translate(-50%, -50%) scale(0); opacity: 1; }
-          100% { transform: translate(-50%, -50%) scale(1.5); opacity: 0; }
+          0% { 
+            transform: translate(-50%, -50%) scale(0); 
+            opacity: 1;
+            filter: brightness(1) blur(0px);
+          }
+          30% { 
+            transform: translate(-50%, -50%) scale(0.8); 
+            opacity: 1;
+            filter: brightness(1.2) blur(1px);
+          }
+          70% { 
+            transform: translate(-50%, -50%) scale(1.2); 
+            opacity: 0.8;
+            filter: brightness(1.1) blur(2px);
+          }
+          100% { 
+            transform: translate(-50%, -50%) scale(1.8); 
+            opacity: 0;
+            filter: brightness(0.8) blur(3px);
+          }
         }
       `;
       document.head.appendChild(glassStyle);
@@ -682,15 +873,16 @@ const Challenges = {
         piecesContainer.style.zIndex = '100'; // Ensure it's on top
         button.parentNode.insertBefore(piecesContainer, button.nextSibling);
 
-        const numPieces = 30; // Increased number of pieces
+        const numPieces = 40; // Increased number of pieces for better effect
         for (let i = 0; i < numPieces; i++) {
           const piece = document.createElement('div');
           piece.className = 'glass-piece';
           const angle = Math.random() * 2 * Math.PI;
-          const distance = Math.random() * 100 + 50; // Fly further
+          const distance = Math.random() * 120 + 80; // Fly further and more varied
           piece.style.setProperty('--fly-x', `${Math.cos(angle) * distance}px`);
           piece.style.setProperty('--fly-y', `${Math.sin(angle) * distance}px`);
-          piece.style.setProperty('--fly-rot', `${Math.random() * 720 - 360}deg`); // More rotation
+          piece.style.setProperty('--fly-rot', `${Math.random() * 1080 - 540}deg`); // More rotation
+          piece.style.setProperty('--delay', `${Math.random() * 0.3}s`); // Staggered animation
           piecesContainer.appendChild(piece);
         }
 
@@ -698,12 +890,14 @@ const Challenges = {
         const burst = document.createElement('div');
         burst.className = 'shatter-burst';
         button.parentNode.insertBefore(burst, button.nextSibling);
-        setTimeout(() => burst.remove(), 500); // Remove burst after 0.5s
+        setTimeout(() => burst.remove(), 800); // Remove burst after 0.8s
 
+        // Restart the button after shattering animation
         setTimeout(() => {
-          button.remove();
           piecesContainer.remove();
-        }, 1000); // Remove button and pieces after animation
+          resetButton();
+          showPopup("Button regenerated! Snail magic! 🐌✨");
+        }, 2000); // Restart after 2 seconds
       }
       
       // Create glass pieces animation
@@ -780,13 +974,13 @@ const Challenges = {
     }
   },
   4: {
-    title: 'The Cursed Tic Tac Toe',
-    desc: 'Play Tic Tac Toe. But there\'s a secret rule...',
+    title: 'Ultra-Simple Tic Tac Toe',
+    desc: 'Basic Tic Tac Toe with zero performance issues',
     render(container, onComplete) {
       container.innerHTML = `
         <div class="center">
           <h3 class="challenge-title">Level 4</h3>
-          <div class="cursed-title" style="font-size: 48px; font-weight: 900; color: var(--accent); text-shadow: 0 0 20px #5aa7ff; margin: 20px 0; animation: pulse 2s ease-in-out infinite;">PLAY</div>
+          <p class="challenge-desc">Ultra-Simple Tic Tac Toe - No lag, no hanging, just pure gameplay!</p>
           
           <div class="game-board" style="margin: 30px auto; width: 300px; height: 300px; display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; background: #1f2a44; padding: 8px; border-radius: 12px; border: 2px solid #2a3550;">
             <div class="cell" data-index="0"></div>
@@ -802,26 +996,17 @@ const Challenges = {
           
           <div class="game-status" style="margin: 20px 0; text-align: center;">
             <div id="status-text" style="font-size: 18px; font-weight: 600; color: var(--accent);">Your turn (X)</div>
-            <div id="secret-message" style="margin-top: 12px; font-style: italic; color: var(--muted); font-size: 14px;"></div>
           </div>
           
-          <button id="reset-btn" class="secondary" style="margin-top: 16px;">Reset Game</button>
+          <div class="game-info" style="margin: 20px 0; text-align: center;">
+            <div style="margin-bottom: 8px; color: var(--muted);">Rounds: <span id="rounds-played">0</span></div>
+          </div>
         </div>
       `;
       
-      // Add cursed styling
+      // Ultra-minimal static styling for maximum performance
       const cursedStyle = document.createElement('style');
       cursedStyle.textContent = `
-        .cursed-title {
-          font-family: "Space Grotesk", monospace;
-          letter-spacing: 2px;
-        }
-        
-        @keyframes pulse {
-          0%, 100% { transform: scale(1); opacity: 1; }
-          50% { transform: scale(1.05); opacity: 0.8; }
-        }
-        
         .cell {
           background: #0e1730;
           border: 2px solid #2a3550;
@@ -832,117 +1017,60 @@ const Challenges = {
           font-size: 48px;
           font-weight: 900;
           cursor: pointer;
-          transition: all 0.2s ease;
           color: var(--text);
-        }
-        
-        .cell:hover {
-          background: #1a2a50;
-          border-color: var(--accent);
-          transform: scale(1.05);
         }
         
         .cell.x {
           color: var(--accent);
-          text-shadow: 0 0 10px #5aa7ff;
         }
         
         .cell.o {
           color: var(--danger);
-          text-shadow: 0 0 10px #ff4d6d;
         }
         
-        .cell.win {
-          animation: win-flash 0.6s ease-in-out 3;
-        }
+
         
-        @keyframes win-flash {
-          0%, 100% { background: #0e1730; }
-          50% { background: #59ffa5; }
-        }
-        
-        .failure-confetti {
-          position: fixed;
-          top: 0;
-          left: 0;
-          width: 100%;
-          height: 100%;
-          pointer-events: none;
-          z-index: 1000;
-        }
-        
-        .confetti-piece {
-          position: absolute;
-          width: 10px;
-          height: 10px;
-          background: var(--danger);
-          animation: confetti-fall 3s linear forwards;
-        }
-        
-        @keyframes confetti-fall {
-          0% { transform: translateY(-100vh) rotate(0deg); opacity: 1; }
-          100% { transform: translateY(100vh) rotate(720deg); opacity: 0; }
-        }
-        
-        .cursed-message {
-          animation: shake 0.5s ease-in-out;
-        }
-        
-        @keyframes shake {
-          0%, 100% { transform: translateX(0); }
-          25% { transform: translateX(-5px); }
-          75% { transform: translateX(5px); }
-        }
+
       `;
       document.head.appendChild(cursedStyle);
       
       const cells = $$('.cell');
       const statusText = $('#status-text');
-      const secretMessage = $('#secret-message');
-      const resetBtn = $('#reset-btn');
+      const roundsPlayed = $('#rounds-played');
       
       let board = ['', '', '', '', '', '', '', '', ''];
       let currentPlayer = 'X';
       let gameActive = true;
-      let gameWon = false;
+      let roundsCount = 0;
       
-      // Winning combinations
-      const winConditions = [
-        [0, 1, 2], [3, 4, 5], [6, 7, 8], // Rows
-        [0, 3, 6], [1, 4, 7], [2, 5, 8], // Columns
-        [0, 4, 8], [2, 4, 6] // Diagonals
-      ];
-      
-      // Check for win
-      function checkWin(board, player) {
-        return winConditions.some(combination => {
-          return combination.every(index => board[index] === player);
-        });
-      }
+
       
       // Check for draw
       function checkDraw() {
         return board.every(cell => cell !== '');
       }
       
-      // AI move (strategic but beatable)
+      // Simple win check
+      function checkWin(board, player) {
+        const lines = [
+          [0,1,2], [3,4,5], [6,7,8], // rows
+          [0,3,6], [1,4,7], [2,5,8], // cols
+          [0,4,8], [2,4,6] // diags
+        ];
+        return lines.some(line => 
+          line.every(i => board[i] === player)
+        );
+      }
+      
+
+      
+      // Simple AI move
       function makeAIMove() {
-        const emptyCells = board.map((cell, idx) => cell === '' ? idx : -1).filter(idx => idx !== -1);
-        
-        // Easy AI: prioritize center, then corners, then random
-        const easyMoves = [4, 0, 2, 6, 8, 1, 3, 5, 7]; // Center, then corners, then sides
-
-        for (const move of easyMoves) {
-          if (emptyCells.includes(move)) {
-            makeMove(move, 'O'); // AI makes its move
-              return;
+        for (let i = 0; i < board.length; i++) {
+          if (board[i] === '') {
+            makeMove(i, 'O');
+            break;
           }
-        }
-
-        // Fallback to random if no easy move found (shouldn't happen with full board)
-        if (emptyCells.length > 0) {
-          const randomIndex = Math.floor(Math.random() * emptyCells.length);
-          makeMove(emptyCells[randomIndex], 'O'); // AI makes its move
         }
       }
       
@@ -960,48 +1088,59 @@ const Challenges = {
           gameActive = false;
           
           if (player === 'X') {
-            // Player won - show success message
-            statusText.textContent = "🎉 Congratulations! You beat the Cursed Tic Tac Toe!";
+            // Player won - snail taunts
+            statusText.textContent = "🎉 You won! (But you were supposed to lose...)";
             statusText.style.color = "var(--ok)";
-            secretMessage.textContent = "You have broken the curse! Level Cleared!";
-            secretMessage.style.color = "var(--ok)";
+            snailMessage.textContent = "🐌 Snail: Pathetic human, I let you have that.";
+            snailMessage.style.color = "var(--muted)";
             
-            // Fire success confetti
-            fireConfetti();
+            // Highlight winning cells (hardcoded for speed)
+            if (board[0] === player && board[1] === player && board[2] === player) {
+              cells[0].classList.add('win'); cells[1].classList.add('win'); cells[2].classList.add('win');
+            } else if (board[3] === player && board[4] === player && board[5] === player) {
+              cells[3].classList.add('win'); cells[4].classList.add('win'); cells[5].classList.add('win');
+            } else if (board[6] === player && board[7] === player && board[8] === player) {
+              cells[6].classList.add('win'); cells[7].classList.add('win'); cells[8].classList.add('win');
+            } else if (board[0] === player && board[3] === player && board[6] === player) {
+              cells[0].classList.add('win'); cells[3].classList.add('win'); cells[6].classList.add('win');
+            } else if (board[1] === player && board[4] === player && board[7] === player) {
+              cells[1].classList.add('win'); cells[4].classList.add('win'); cells[7].classList.add('win');
+            } else if (board[2] === player && board[5] === player && board[8] === player) {
+              cells[2].classList.add('win'); cells[5].classList.add('win'); cells[8].classList.add('win');
+            } else if (board[0] === player && board[4] === player && board[8] === player) {
+              cells[0].classList.add('win'); cells[4].classList.add('win'); cells[8].classList.add('win');
+            } else if (board[2] === player && board[4] === player && board[6] === player) {
+              cells[2].classList.add('win'); cells[4].classList.add('win'); cells[6].classList.add('win');
+            }
             
-            setTimeout(() => {
-              showPopup("Victory! Snails are amazed by your strategy.");
+            // Simple auto-clear
+            roundsCount++;
+            if (roundsCount >= 3) {
               onComplete();
-            }, 3000);
+            } else {
+              setTimeout(resetBoard, 1000);
+            }
           } else {
-            // AI won - show troll message
-            statusText.textContent = "The AI outsmarted you! Try again to break the curse.";
-            statusText.style.color = "var(--danger)";
-            secretMessage.textContent = "You were meant to win, not lose! Keep trying!";
-            secretMessage.style.color = "var(--accent)";
-          }
-          
-          // Highlight winning cells
-          const winningCombination = winConditions.find(combination => {
-            return combination.every(index => board[index] === player);
-          });
-          if (winningCombination) {
-            winningCombination.forEach(index => {
-              cells[index].classList.add('win');
-            });
+            // AI won
+            statusText.textContent = "AI won!";
+            setTimeout(resetBoard, 1000);
           }
         } else if (checkDraw()) {
           // Draw
           gameActive = false;
-          statusText.textContent = "Close… but we don't accept mediocrity here. Lose properly.";
-          statusText.style.color = "var(--muted)";
-          secretMessage.textContent = "You need to LOSE, not draw! Try harder to fail!";
-          secretMessage.style.color = "var(--accent)";
+          statusText.textContent = "Draw!";
+          
+          roundsCount++;
+          if (roundsCount >= 3) {
+            onComplete();
+          } else {
+            setTimeout(resetBoard, 1000);
+          }
         } else {
           // Switch players
           currentPlayer = currentPlayer === 'X' ? 'O' : 'X';
           if (currentPlayer === 'O') {
-            statusText.textContent = "AI thinking... (O)";
+            statusText.textContent = "AI thinking...";
             setTimeout(makeAIMove, 500);
           } else {
             statusText.textContent = "Your turn (X)";
@@ -1009,46 +1148,23 @@ const Challenges = {
         }
       }
       
-      // Show failure confetti
-      function showFailureConfetti() {
-        const confettiContainer = document.createElement('div');
-        confettiContainer.className = 'failure-confetti';
-        
-        for (let i = 0; i < 50; i++) {
-          const piece = document.createElement('div');
-          piece.className = 'confetti-piece';
-          piece.style.left = `${Math.random() * 100}%`;
-          piece.style.animationDelay = `${Math.random() * 2}s`;
-          piece.style.background = `hsl(${Math.random() * 360}, 70%, 60%)`;
-          confettiContainer.appendChild(piece);
-        }
-        
-        document.body.appendChild(confettiContainer);
-        
-        setTimeout(() => {
-          confettiContainer.remove();
-        }, 4000);
-      }
-      
-      // Reset game
-      function resetGame() {
+      // Simple board reset
+      function resetBoard() {
         board = ['', '', '', '', '', '', '', '', ''];
         currentPlayer = 'X';
         gameActive = true;
-        gameWon = false;
         
-        cells.forEach(cell => {
-          cell.textContent = '';
-          cell.className = 'cell';
-        });
+        // Fast DOM reset
+        for (let i = 0; i < cells.length; i++) {
+          cells[i].textContent = '';
+          cells[i].className = 'cell';
+        }
         
         statusText.textContent = "Your turn (X)";
-        statusText.style.color = "var(--accent)";
-        statusText.classList.remove('cursed-message');
-        secretMessage.textContent = "";
+        roundsPlayed.textContent = roundsCount;
       }
       
-      // Cell click handler
+      // Simple cell click handler
       cells.forEach((cell, index) => {
         cell.addEventListener('click', () => {
           if (currentPlayer === 'X' && gameActive) {
@@ -1057,8 +1173,11 @@ const Challenges = {
         });
       });
       
-      // Reset button
-      resetBtn.addEventListener('click', resetGame);
+      // Initialize
+      roundsPlayed.textContent = roundsCount;
+      
+      // Return cleanup function
+      return () => {};
     }
   },
   5: {
